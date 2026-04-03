@@ -1,13 +1,13 @@
 #include "Game.h"
-#include "Modules/ModuleManager.h"
+#include "Logging/AtlasLogMacros.h"
 
-IMPLEMENT_PRIMARY_GAME_MODULE(FGameModule, Game, "Game");
+#define LOCTEXT_NAMESPACE "FGameModule"
 
 // This code will execute after your module is loaded into memory;
 // the exact timing is specified in the .uplugin file per-module
 void FGameModule::StartupModule()
 {
-	UE_LOG(LogInit, Warning, TEXT("[Game] Module Started"));
+	ATLAS_LOG(Warning, "Game Started");
 
 	//FModuleManager::Get().LoadModuleChecked("GameCore");
 	//FModuleManager::Get().LoadModuleChecked("GameUI");
@@ -19,5 +19,9 @@ void FGameModule::StartupModule()
 // For modules that support dynamic reloading, we call this function before unloading the module.
 void FGameModule::ShutdownModule()
 {
-	UE_LOG(LogInit, Warning, TEXT("[Game] Module Shutdown"));
+	ATLAS_LOG(Warning, "Game Shutdown");
 }
+
+#undef LOCTEXT_NAMESPACE
+
+IMPLEMENT_PRIMARY_GAME_MODULE(FGameModule, Game, "Game");

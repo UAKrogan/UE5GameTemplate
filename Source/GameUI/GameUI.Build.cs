@@ -19,8 +19,7 @@ public class GameUI : ModuleRules
 		]);
 
 		PrivateDependencyModuleNames.AddRange([
-			"Slate",
-			"SlateCore"
+			"Slate", "SlateCore"
 		]);
 	}
 }

@@ -1,14 +1,18 @@
 ﻿#include "GameUtils.h"
-#include "Modules/ModuleManager.h"
+#include "Logging/AtlasLogMacros.h"
 
-IMPLEMENT_MODULE(FGameUtilsModule, GameUtils)
+#define LOCTEXT_NAMESPACE "FGameUtilsModule"
 
 void FGameUtilsModule::StartupModule()
 {
-	UE_LOG(LogInit, Warning, TEXT("[GameUtils] Module Started"));
+	ATLAS_LOG_UTILS(Warning, "Module Started");
 }
 
 void FGameUtilsModule::ShutdownModule()
 {
-	UE_LOG(LogInit, Warning, TEXT("[GameUtils] Module Shutdown"));
+	ATLAS_LOG_UTILS(Warning, "Module Shutdown");
 }
+
+#undef LOCTEXT_NAMESPACE
+
+IMPLEMENT_MODULE(FGameUtilsModule, GameUtils)

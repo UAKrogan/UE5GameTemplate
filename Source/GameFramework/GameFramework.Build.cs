@@ -2,10 +2,10 @@
 using System.IO;
 
 // ReSharper disable once InconsistentNaming
-public class GameUtils : ModuleRules
+public class GameFramework : ModuleRules
 {
 	// ReSharper disable once InconsistentNaming
-	public GameUtils(ReadOnlyTargetRules Target) : base(Target)
+	public GameFramework(ReadOnlyTargetRules Target) : base(Target)
 	{
 		PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
 
@@ -14,9 +14,12 @@ public class GameUtils : ModuleRules
 		PrivateIncludePaths.Add(Path.Combine(ModuleDirectory, "Private"));
 
 		PublicDependencyModuleNames.AddRange([
-			"Core"
+			"Core", "CoreUObject", "Engine", "InputCore", "EnhancedInput", "AIModule",
+			"GameUtils"
 		]);
 
-		PrivateDependencyModuleNames.AddRange([]);
+		PrivateDependencyModuleNames.AddRange([
+			"Slate", "SlateCore"
+		]);
 	}
 }

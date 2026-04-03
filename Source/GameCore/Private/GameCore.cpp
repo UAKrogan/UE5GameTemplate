@@ -1,14 +1,18 @@
 ﻿#include "GameCore.h"
-#include "Modules/ModuleManager.h"
+#include "Logging/AtlasLogMacros.h"
 
-IMPLEMENT_MODULE(FGameCoreModule, GameCore)
+#define LOCTEXT_NAMESPACE "FGameCoreModule"
 
 void FGameCoreModule::StartupModule()
 {
-	UE_LOG(LogInit, Warning, TEXT("[GameCore] Module Started"));
+	ATLAS_LOG_CORE(Warning, "Module Started");
 }
 
 void FGameCoreModule::ShutdownModule()
 {
-	UE_LOG(LogInit, Warning, TEXT("[GameCore] Module Shutdown"));
+	ATLAS_LOG_CORE(Warning, "Module Shutdown");
 }
+
+#undef LOCTEXT_NAMESPACE
+
+IMPLEMENT_MODULE(FGameCoreModule, GameCore)

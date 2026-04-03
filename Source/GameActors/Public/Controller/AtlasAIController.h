@@ -3,22 +3,22 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "GameFramework/PlayerState.h"
-#include "AtlasPlayerState.generated.h"
+#include "AIController.h"
+#include "AtlasAIController.generated.h"
 
 /**
  * 
  */
 UCLASS()
-class GAMEFRAMEWORK_API AAtlasPlayerState : public APlayerState
+class GAMEACTORS_API AAtlasAIController : public AAIController
 {
 	GENERATED_BODY()
 
 public:
-	AAtlasPlayerState();
+	AAtlasAIController();
 
 protected:
 	virtual void BeginPlay() override;
 
-	virtual void InitializePlayerState();
+	virtual void InitializeAI();
 };

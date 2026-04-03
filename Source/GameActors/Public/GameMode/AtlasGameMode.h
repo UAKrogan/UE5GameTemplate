@@ -10,7 +10,7 @@
  * 
  */
 UCLASS()
-class GAMEFRAMEWORK_API AAtlasGameMode : public AGameModeBase
+class GAMEACTORS_API AAtlasGameMode : public AGameModeBase
 {
 	GENERATED_BODY()
 

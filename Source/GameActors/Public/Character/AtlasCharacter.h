@@ -7,7 +7,7 @@
 #include "AtlasCharacter.generated.h"
 
 UCLASS()
-class GAMEFRAMEWORK_API AAtlasCharacter : public ACharacter
+class GAMEACTORS_API AAtlasCharacter : public ACharacter
 {
 	GENERATED_BODY()
 

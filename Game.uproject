@@ -8,7 +8,11 @@
 			"Name": "Game",
 			"Type": "Runtime",
 			"LoadingPhase": "Default"
-		}
+		},
+		{ "Name": "GameActors", "Type": "Runtime" },
+		{ "Name": "GameCore", "Type": "Runtime" },
+		{ "Name": "GameUI", "Type": "Runtime" },
+		{ "Name": "GameUtils", "Type": "Runtime" }
 	],
 	"Plugins": [
 		{

@@ -7,7 +7,7 @@
 // the exact timing is specified in the .uplugin file per-module
 void FGameModule::StartupModule()
 {
-	ATLAS_LOG(Warning, "Game Started");
+	ATLAS_LOG(Log, "Game Started");
 
 	//FModuleManager::Get().LoadModuleChecked("GameCore");
 	//FModuleManager::Get().LoadModuleChecked("GameUI");
@@ -19,7 +19,7 @@ void FGameModule::StartupModule()
 // For modules that support dynamic reloading, we call this function before unloading the module.
 void FGameModule::ShutdownModule()
 {
-	ATLAS_LOG(Warning, "Game Shutdown");
+	ATLAS_LOG(Log, "Game Shutdown");
 }
 
 #undef LOCTEXT_NAMESPACE

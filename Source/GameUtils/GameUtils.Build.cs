@@ -14,7 +14,7 @@ public class GameUtils : ModuleRules
 		PrivateIncludePaths.Add(Path.Combine(ModuleDirectory, "Private"));
 
 		PublicDependencyModuleNames.AddRange([
-			"Core"
+			"Core", "CoreUObject",
 		]);
 
 		PrivateDependencyModuleNames.AddRange([]);

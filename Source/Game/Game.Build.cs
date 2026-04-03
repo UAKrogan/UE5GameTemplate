@@ -14,8 +14,8 @@ public class Game : ModuleRules
 		PrivateIncludePaths.Add(Path.Combine(ModuleDirectory, "Private"));
 
 		PublicDependencyModuleNames.AddRange([
-			"Core", "CoreUObject", "Engine", "InputCore", "EnhancedInput",
-			"GameCore", "GameSystems", "GameUI", "GameUtils"
+			"Core", "CoreUObject", "Engine",
+			"GameActors", "GameCore", "GameUI", "GameUtils"
 		]);
 
 		PrivateDependencyModuleNames.AddRange([]);

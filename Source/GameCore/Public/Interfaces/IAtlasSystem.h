@@ -5,12 +5,17 @@
 class UAtlasGameInstanceSubsystem;
 
 /*
- * Base interface for all Atlas systems.
+ * Base class for all Atlas systems.
  *
  * Systems are:
  * - Owned by UAtlasGameInstanceSubsystem
  * - Initialized once per game session
  * - Pure logic containers (no direct Actor ownership)
+ *
+ * Design rules:
+ * - Systems must not depend on Actors directly
+ * - Systems must not own gameplay objects
+ * - Systems are controlled by the Subsystem lifecycle
  */
 class GAMECORE_API IAtlasSystem
 {
@@ -31,7 +36,8 @@ public:
 
 	/*
 	 * Unique system identifier.
-	 * Should be stable across the lifetime of the application.
+	 *
+	 * Must be stable and unique across all systems.
 	 */
 	virtual FName GetSystemName() const = 0;
 };

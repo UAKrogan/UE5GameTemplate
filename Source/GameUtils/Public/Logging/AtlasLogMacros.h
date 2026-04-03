@@ -47,7 +47,7 @@
 
 
 /*
- * Core module logging
+ * Actors module logging
  *
  * Used for:
  * - Subsystems
@@ -57,26 +57,12 @@
  * Example:
  *   ATLAS_LOG_CORE(Log, "Atlas subsystem initialized");
  */
-#define ATLAS_LOG_CORE(Verbosity, Format, ...) \
-	UE_LOG(LogAtlasCore, Verbosity, TEXT("[Core] " Format), ##__VA_ARGS__)
+#define ATLAS_LOG_ACTORS(Verbosity, Format, ...) \
+	UE_LOG(LogAtlasActors, Verbosity, TEXT("[Core] " Format), ##__VA_ARGS__)
 
 
 /*
- * Framework module logging
- *
- * Used for:
- * - Character / Controller lifecycle
- * - Gameplay framework events
- *
- * Example:
- *   ATLAS_LOG_FRAMEWORK(Log, "Character BeginPlay");
- */
-#define ATLAS_LOG_FRAMEWORK(Verbosity, Format, ...) \
-UE_LOG(LogAtlasFramework, Verbosity, TEXT("[Framework] " Format), ##__VA_ARGS__)
-
-
-/*
- * Systems module logging
+ * Core module logging
  *
  * Used for:
  * - Save system
@@ -84,10 +70,10 @@ UE_LOG(LogAtlasFramework, Verbosity, TEXT("[Framework] " Format), ##__VA_ARGS__)
  * - Runtime services
  *
  * Example:
- *   ATLAS_LOG_SYSTEMS(Warning, "Save slot missing: %s", *SlotName);
+ *   ATLAS_LOG_CORE(Warning, "Save slot missing: %s", *SlotName);
  */
-#define ATLAS_LOG_SYSTEMS(Verbosity, Format, ...) \
-	UE_LOG(LogAtlasSystems, Verbosity, TEXT("[Systems] " Format), ##__VA_ARGS__)
+#define ATLAS_LOG_CORE(Verbosity, Format, ...) \
+	UE_LOG(LogAtlasCore, Verbosity, TEXT("[Systems] " Format), ##__VA_ARGS__)
 
 
 /*

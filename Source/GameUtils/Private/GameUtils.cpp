@@ -5,12 +5,12 @@
 
 void FGameUtilsModule::StartupModule()
 {
-	ATLAS_LOG_UTILS(Warning, "Module Started");
+	ATLAS_LOG_UTILS(Log, "Module Started");
 }
 
 void FGameUtilsModule::ShutdownModule()
 {
-	ATLAS_LOG_UTILS(Warning, "Module Shutdown");
+	ATLAS_LOG_UTILS(Log, "Module Shutdown");
 }
 
 #undef LOCTEXT_NAMESPACE

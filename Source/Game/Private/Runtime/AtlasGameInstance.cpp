@@ -8,8 +8,6 @@ void UAtlasGameInstance::Init()
 {
 	Super::Init();
 
-	Super::Init();
-
 	ATLAS_LOG(Log, "[GameInstance] Init");
 
 	UAtlasGameInstanceSubsystem* Subsystem = GetSubsystem<UAtlasGameInstanceSubsystem>();

@@ -10,7 +10,7 @@
  * 
  */
 UCLASS()
-class GAMEFRAMEWORK_API AAtlasPlayerController : public APlayerController
+class GAMEACTORS_API AAtlasPlayerController : public APlayerController
 {
 	GENERATED_BODY()
 

@@ -7,7 +7,7 @@
 #include "AtlasPawn.generated.h"
 
 UCLASS()
-class GAMEFRAMEWORK_API AAtlasPawn : public APawn
+class GAMEACTORS_API AAtlasPawn : public APawn
 {
 	GENERATED_BODY()
 

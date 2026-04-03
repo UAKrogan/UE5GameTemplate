@@ -3,7 +3,7 @@
 #include "CoreMinimal.h"
 #include "Modules/ModuleManager.h"
 
-class FGameFrameworkModule : public IModuleInterface
+class FGameActorsModule : public IModuleInterface
 {
 public:
 	/** IModuleInterface implementation */

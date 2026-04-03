@@ -14,7 +14,7 @@ public class GameUI : ModuleRules
 		PrivateIncludePaths.Add(Path.Combine(ModuleDirectory, "Private"));
 
 		PublicDependencyModuleNames.AddRange([
-			"Core", "CoreUObject", "Engine", "UMG",
+			"Core", "CoreUObject", "Engine", "UMG", "CommonUI",
 			"GameUtils"
 		]);
 

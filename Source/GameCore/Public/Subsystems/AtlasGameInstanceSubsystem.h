@@ -17,8 +17,16 @@ class IAtlasSystem;
  * - Provide access to systems (service locator pattern)
  *
  * Lifecycle:
- *   Initialize()  -> RegisterSystems() -> InitializeSystems()
- *   Deinitialize() -> ShutdownSystems()
+ *   Initialize()
+ *     -> RegisterSystems()
+ *     -> InitializeSystems()
+ *
+ *   Deinitialize()
+ *     -> ShutdownSystems()
+ *
+ * Notes:
+ * - Systems are registered externally (GameSystems module)
+ * - Prevents circular dependency between modules
  */
 UCLASS()
 class GAMECORE_API UAtlasGameInstanceSubsystem : public UGameInstanceSubsystem
@@ -26,7 +34,6 @@ class GAMECORE_API UAtlasGameInstanceSubsystem : public UGameInstanceSubsystem
 	GENERATED_BODY()
 
 public:
-
 	/*
 	 * Called by Unreal during GameInstance initialization.
 	 */
@@ -38,29 +45,35 @@ public:
 	virtual void Deinitialize() override;
 
 	/*
+	 * Registers a system instance.
+	 *
+	 * Called by external modules (e.g., AtlasSystemsRegistry).
+	 *
+	 * @param System - System instance to register
+	 */
+	void RegisterSystem(TSharedPtr<IAtlasSystem> System);
+
+	/*
 	 * Retrieve a system by interface type.
 	 *
-	 * Usage examples:
+	 * Usage example:
 	 *
-	 *   // Example 1: inside Actor
-	 *   UAtlasGameInstanceSubsystem* Subsystem = GetGameInstance()->GetSubsystem<UAtlasGameInstanceSubsystem>();
+	 *   UAtlasGameInstanceSubsystem* Subsystem =
+	 *       GetGameInstance()->GetSubsystem<UAtlasGameInstanceSubsystem>();
 	 *
-	 *   TSharedPtr<IMySystem> System = Subsystem->GetSystem<IMySystem>();
+	 *   TSharedPtr<IAtlasSaveSystem> SaveSystem =
+	 *       Subsystem->GetSystem<IAtlasSaveSystem>();
 	 *
-	 *   // Example 2: inside Controller
-	 *   if (UAtlasGameInstanceSubsystem* Subsystem = GetGameInstance()->GetSubsystem<UAtlasGameInstanceSubsystem>())
+	 *   if (SaveSystem.IsValid())
 	 *   {
-	 *       if (TSharedPtr<IMySystem> System = Subsystem->GetSystem<IMySystem>())
-	 *       {
-	 *           // Use system
-	 *       }
+	 *       SaveSystem->SaveGame();
 	 *   }
 	 *
 	 * Notes:
 	 * - Returns nullptr if system not found
-	 * - Interface must match the stored system type
+	 * - Caller must validate pointer
 	 */
-	template<typename T>
+	template <typename T>
 	TSharedPtr<T> GetSystem() const
 	{
 		for (const auto& Pair : Systems)
@@ -76,27 +89,26 @@ public:
 	}
 
 private:
-
 	/*
-	 * Register all systems here.
-	 * This is the only place where systems are created.
+	 * Delegates system registration to GameSystems module.
 	 */
 	void RegisterSystems();
 
 	/*
-	 * Initialize all registered systems.
+	 * Initializes all registered systems.
 	 */
 	void InitializeSystems();
 
 	/*
-	 * Shutdown all systems.
+	 * Shuts down all systems.
 	 */
 	void ShutdownSystems();
 
-private:
-
 	/*
 	 * Storage for all runtime systems.
+	 *
+	 * Key: System name (must be unique)
+	 * Value: System instance
 	 */
 	TMap<FName, TSharedPtr<IAtlasSystem>> Systems;
 };

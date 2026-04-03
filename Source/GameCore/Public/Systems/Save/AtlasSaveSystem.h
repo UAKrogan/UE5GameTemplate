@@ -22,6 +22,11 @@ public:
 		return "SaveSystem";
 	}
 
+	virtual bool SupportsInterface(FName InterfaceName) const override
+	{
+		return InterfaceName == IAtlasSaveSystem::InterfaceName();
+	}
+
 	virtual void SaveGame() override;
 
 private:

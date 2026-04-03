@@ -12,6 +12,11 @@
 class GAMECORE_API IAtlasLoadSystem : public IAtlasSystem
 {
 public:
+	static FName InterfaceName()
+	{
+		return "IAtlasLoadSystem";
+	}
+
 	/*
 	 * Triggers load process.
 	 */

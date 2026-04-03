@@ -40,4 +40,12 @@ public:
 	 * Must be stable and unique across all systems.
 	 */
 	virtual FName GetSystemName() const = 0;
+
+	/*
+	 * Runtime-checked interface support for safe subsystem lookup.
+	 *
+	 * @param InterfaceName - Logical interface identifier
+	 * @return true if this system implements the requested interface
+	 */
+	virtual bool SupportsInterface(FName InterfaceName) const = 0;
 };

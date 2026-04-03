@@ -12,6 +12,11 @@
 class GAMECORE_API IAtlasSaveSystem : public IAtlasSystem
 {
 public:
+	static FName InterfaceName()
+	{
+		return "IAtlasSaveSystem";
+	}
+
 	/*
 	 * Triggers save process.
 	 */

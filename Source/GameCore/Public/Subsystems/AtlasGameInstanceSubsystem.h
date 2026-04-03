@@ -1,5 +1,6 @@
 ﻿#pragma once
 
+#include "Interfaces/IAtlasSystem.h"
 #include "Subsystems/GameInstanceSubsystem.h"
 #include "AtlasGameInstanceSubsystem.generated.h"
 
@@ -25,7 +26,7 @@ class IAtlasSystem;
  *     -> ShutdownSystems()
  *
  * Notes:
- * - Systems are registered externally (GameSystems module)
+ * - Systems are registered externally (GameCore registry)
  * - Prevents circular dependency between modules
  */
 UCLASS()
@@ -78,10 +79,9 @@ public:
 	{
 		for (const auto& Pair : Systems)
 		{
-			TSharedPtr<T> Casted = StaticCastSharedPtr<T>(Pair.Value);
-			if (Casted.IsValid())
+			if (Pair.Value.IsValid() && Pair.Value->SupportsInterface(T::InterfaceName()))
 			{
-				return Casted;
+				return StaticCastSharedPtr<T>(Pair.Value);
 			}
 		}
 
@@ -90,7 +90,7 @@ public:
 
 private:
 	/*
-	 * Delegates system registration to GameSystems module.
+	 * Delegates system registration to the systems registry.
 	 */
 	void RegisterSystems();
 
@@ -111,4 +111,12 @@ private:
 	 * Value: System instance
 	 */
 	TMap<FName, TSharedPtr<IAtlasSystem>> Systems;
+
+	/*
+	 * Preserves deterministic lifecycle ordering.
+	 *
+	 * Systems are initialized in registration order and
+	 * shut down in reverse registration order.
+	 */
+	TArray<FName> SystemOrder;
 };

@@ -34,7 +34,7 @@ void UAtlasGameInstanceSubsystem::Deinitialize()
 }
 
 /*
- * Delegates system registration to GameSystems module.
+ * Delegates system registration to the systems registry.
  */
 void UAtlasGameInstanceSubsystem::RegisterSystems()
 {
@@ -48,11 +48,16 @@ void UAtlasGameInstanceSubsystem::RegisterSystems()
  */
 void UAtlasGameInstanceSubsystem::InitializeSystems()
 {
-	for (auto& Pair : Systems)
+	for (const FName& SystemName : SystemOrder)
 	{
-		ATLAS_LOG_CORE(Log, "Initializing system: %s", *Pair.Key.ToString());
+		TSharedPtr<IAtlasSystem>* System = Systems.Find(SystemName);
+		if (!System || !System->IsValid())
+		{
+			continue;
+		}
 
-		Pair.Value->Initialize(this);
+		ATLAS_LOG_CORE(Log, "Initializing system: %s", *SystemName.ToString());
+		(*System)->Initialize(this);
 	}
 }
 
@@ -61,14 +66,21 @@ void UAtlasGameInstanceSubsystem::InitializeSystems()
  */
 void UAtlasGameInstanceSubsystem::ShutdownSystems()
 {
-	for (auto& Pair : Systems)
+	for (int32 Index = SystemOrder.Num() - 1; Index >= 0; --Index)
 	{
-		ATLAS_LOG_CORE(Log, "Shutting down system: %s", *Pair.Key.ToString());
+		const FName& SystemName = SystemOrder[Index];
+		TSharedPtr<IAtlasSystem>* System = Systems.Find(SystemName);
+		if (!System || !System->IsValid())
+		{
+			continue;
+		}
 
-		Pair.Value->Shutdown();
+		ATLAS_LOG_CORE(Log, "Shutting down system: %s", *SystemName.ToString());
+		(*System)->Shutdown();
 	}
 
 	Systems.Empty();
+	SystemOrder.Empty();
 }
 
 /*
@@ -81,5 +93,13 @@ void UAtlasGameInstanceSubsystem::RegisterSystem(TSharedPtr<IAtlasSystem> System
 		return;
 	}
 
-	Systems.Add(System->GetSystemName(), System);
+	const FName SystemName = System->GetSystemName();
+	if (Systems.Contains(SystemName))
+	{
+		ATLAS_LOG_CORE(Warning, "System already registered: %s", *SystemName.ToString());
+		return;
+	}
+
+	Systems.Add(SystemName, System);
+	SystemOrder.Add(SystemName);
 }

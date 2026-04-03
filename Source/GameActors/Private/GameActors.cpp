@@ -10,7 +10,7 @@ void FGameActorsModule::StartupModule()
 
 void FGameActorsModule::ShutdownModule()
 {
-	ATLAS_LOG_ACTORS(Log, "Module Started");
+	ATLAS_LOG_ACTORS(Log, "Module Shutdown");
 }
 
 #undef LOCTEXT_NAMESPACE

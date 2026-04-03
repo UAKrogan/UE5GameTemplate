@@ -22,6 +22,11 @@ public:
 		return "LoadSystem";
 	}
 
+	virtual bool SupportsInterface(FName InterfaceName) const override
+	{
+		return InterfaceName == IAtlasLoadSystem::InterfaceName();
+	}
+
 	virtual void LoadGame() override;
 
 private:

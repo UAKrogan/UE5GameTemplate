@@ -17,7 +17,7 @@
  *
  * Usage example:
  *   ATLAS_LOG_CORE(Log, "Subsystem initialized");
- *   ATLAS_LOG_SYSTEMS(Warning, "Save slot not found: %s", *SlotName);
+ *   ATLAS_LOG_CORE(Warning, "Save slot not found: %s", *SlotName);
  */
 
 
@@ -50,30 +50,30 @@
  * Actors module logging
  *
  * Used for:
- * - Subsystems
- * - Core orchestration
- * - Lifecycle events
+ * - Gameplay actors
+ * - Controllers
+ * - Gameplay framework lifecycle
  *
  * Example:
- *   ATLAS_LOG_CORE(Log, "Atlas subsystem initialized");
+ *   ATLAS_LOG_ACTORS(Log, "Player controller initialized");
  */
 #define ATLAS_LOG_ACTORS(Verbosity, Format, ...) \
-	UE_LOG(LogAtlasActors, Verbosity, TEXT("[Core] " Format), ##__VA_ARGS__)
+	UE_LOG(LogAtlasActors, Verbosity, TEXT("[Actors] " Format), ##__VA_ARGS__)
 
 
 /*
  * Core module logging
  *
  * Used for:
- * - Save system
- * - Session system
- * - Runtime services
+ * - Runtime systems
+ * - Subsystems
+ * - Core orchestration
  *
  * Example:
- *   ATLAS_LOG_CORE(Warning, "Save slot missing: %s", *SlotName);
+ *   ATLAS_LOG_CORE(Warning, "Save system missing: %s", *SlotName);
  */
 #define ATLAS_LOG_CORE(Verbosity, Format, ...) \
-	UE_LOG(LogAtlasCore, Verbosity, TEXT("[Systems] " Format), ##__VA_ARGS__)
+	UE_LOG(LogAtlasCore, Verbosity, TEXT("[Core] " Format), ##__VA_ARGS__)
 
 
 /*

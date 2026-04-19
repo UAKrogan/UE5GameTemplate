@@ -51,15 +51,15 @@ private:
 	struct FAtlasQueuedSaveRequest
 	{
 		FString SlotName;
+		int32 AutosaveIndex = INDEX_NONE;
 		bool bAutosave = false;
 	};
 
 	FAtlasSaveGameSnapshot BuildSnapshotForSave(const FString& SlotName, int32 UserIndex) const;
 	FString ResolveCurrentMapName() const;
-	FString GetAutosaveSlotName() const;
 	UWorld* ResolveWorld() const;
 
-	bool EnqueueSaveRequest(const FString& SlotName, bool bAutosave);
+	bool EnqueueSaveRequest(const FString& SlotName, bool bAutosave, int32 AutosaveIndex = INDEX_NONE);
 	void ProcessNextSaveRequest();
 	void StartSaveRequest(const FAtlasQueuedSaveRequest& Request);
 	void HandleSaveCompleted(const FString& SlotName, bool bAutosave, bool bSuccess, int32 ActorCount, int32 ByteCount);

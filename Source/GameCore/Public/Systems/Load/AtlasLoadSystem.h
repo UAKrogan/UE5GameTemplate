@@ -2,17 +2,25 @@
 
 #include "SaveGame/AtlasSaveGameTypes.h"
 #include "Systems/Load/IAtlasLoadSystem.h"
+#include "Systems/WorldState/AtlasWorldSnapshotTypes.h"
 
+class AActor;
+class UActorComponent;
 class UAtlasGameInstanceSubsystem;
+class UAtlasSavableComponent;
+class UObject;
+class UWorld;
 
 /*
  * Concrete implementation of Load system.
  *
  * Handles:
- * - Restoring saved data
- * - Reconstructing runtime state
+ * - Reading binary save data asynchronously
+ * - Deserializing world snapshots asynchronously
+ * - Resolving/spawning actors on the game thread
+ * - Restoring actor and component state on the game thread
  */
-class GAMECORE_API FAtlasLoadSystem : public IAtlasLoadSystem
+class GAMECORE_API FAtlasLoadSystem : public IAtlasLoadSystem, public TSharedFromThis<FAtlasLoadSystem>
 {
 public:
 	virtual void Initialize(UAtlasGameInstanceSubsystem* Subsystem) override;
@@ -29,6 +37,7 @@ public:
 	}
 
 	virtual void LoadGame() override;
+	virtual bool RequestLoad(const FString& SlotName) override;
 	virtual bool LoadGameFromSlot(const FString& SlotName, int32 UserIndex = 0) override;
 	virtual FString GetDefaultSlotName() const override;
 	virtual bool DoesSaveExist(const FString& SlotName, int32 UserIndex = 0) const override;
@@ -43,10 +52,30 @@ public:
 	virtual bool TryGetTransformValue(FName Key, FTransform& OutValue) const override;
 
 private:
+	UWorld* ResolveWorld() const;
+	AActor* FindActorById(UWorld* World, const FGuid& ActorId) const;
+	AActor* SpawnActorFromSnapshot(UWorld* World, const FAtlasActorSnapshot& ActorSnapshot) const;
+	UAtlasSavableComponent* EnsureSavableComponent(AActor* Actor, const FGuid& ActorId) const;
+
+	void HandleSnapshotLoaded(const FString& SlotName, bool bSuccess, FAtlasWorldSnapshot&& WorldSnapshot);
+	void ApplyWorldSnapshot(const FString& SlotName, const FAtlasWorldSnapshot& WorldSnapshot);
+	void ResolveActorsForSnapshot(UWorld* World, const FAtlasWorldSnapshot& WorldSnapshot, TMap<FGuid, TWeakObjectPtr<AActor>>& OutActorsById);
+	void RestoreSnapshotState(const FAtlasWorldSnapshot& WorldSnapshot, const TMap<FGuid, TWeakObjectPtr<AActor>>& ActorsById);
+	void RestoreActorState(AActor* Actor, const FAtlasActorSnapshot& ActorSnapshot);
+	void RestoreComponentState(AActor* Actor, const FAtlasActorSnapshot& ActorSnapshot);
+	bool RestoreSavableObject(UObject* Object, const FAtlasDataChunk& DataChunk);
+
+	static FName BuildActorChunkName();
+	static FName BuildComponentChunkName(const UActorComponent* Component, int32 ComponentIndex);
+
 	/*
 	 * Reference to owning subsystem.
 	 */
 	UAtlasGameInstanceSubsystem* OwningSubsystem = nullptr;
 
 	FAtlasSaveGameSnapshot LoadedSnapshot;
+	FAtlasWorldSnapshot LoadedWorldSnapshot;
+
+	bool bLoadInProgress = false;
+	bool bShuttingDown = false;
 };

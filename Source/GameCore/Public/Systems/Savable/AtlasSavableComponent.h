@@ -21,6 +21,7 @@ public:
 	const FGuid& GetActorId() const;
 	bool HasValidActorId() const;
 	void EnsureActorId();
+	void SetActorId(const FGuid& InActorId);
 
 	static UAtlasSavableComponent* FindOnActor(const AActor* Actor);
 

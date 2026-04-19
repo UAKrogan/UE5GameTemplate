@@ -24,9 +24,16 @@ public:
 	virtual void LoadGame() = 0;
 
 	/*
+	 * Queues an async load request for a specific slot.
+	 *
+	 * @return true if the request was accepted
+	 */
+	virtual bool RequestLoad(const FString& SlotName) = 0;
+
+	/*
 	 * Loads a snapshot from a specific slot.
 	 *
-	 * @return true if the slot existed and was loaded successfully
+	 * @return true if the load request was accepted
 	 */
 	virtual bool LoadGameFromSlot(const FString& SlotName, int32 UserIndex = 0) = 0;
 

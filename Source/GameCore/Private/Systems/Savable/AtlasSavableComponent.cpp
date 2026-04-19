@@ -52,6 +52,14 @@ void UAtlasSavableComponent::EnsureActorId()
 	GenerateActorId();
 }
 
+void UAtlasSavableComponent::SetActorId(const FGuid& InActorId)
+{
+	if (InActorId.IsValid())
+	{
+		ActorId = InActorId;
+	}
+}
+
 UAtlasSavableComponent* UAtlasSavableComponent::FindOnActor(const AActor* Actor)
 {
 	return Actor ? Actor->FindComponentByClass<UAtlasSavableComponent>() : nullptr;

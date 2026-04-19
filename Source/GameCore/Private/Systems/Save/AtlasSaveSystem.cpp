@@ -2,7 +2,6 @@
 
 #include "Logging/AtlasLogMacros.h"
 #include "Subsystems/AtlasGameInstanceSubsystem.h"
-#include "Systems/Save/AtlasAutosaveManager.h"
 #include "Systems/Save/AtlasSaveCollector.h"
 #include "Systems/Serialization/AtlasBinaryWriter.h"
 #include "Systems/Storage/AtlasFileStorage.h"
@@ -28,9 +27,14 @@ void FAtlasSaveSystem::Initialize(UAtlasGameInstanceSubsystem* Subsystem)
 {
 	OwningSubsystem = Subsystem;
 	PendingSnapshot.Reset();
-	PendingSaveRequests.Reset();
 	bSaveInProgress = false;
 	bShuttingDown = false;
+
+	FAtlasSaveSchedulerConfig SchedulerConfig;
+	SaveScheduler.Initialize(SchedulerConfig, [this]()
+	{
+		ProcessNextSaveRequest();
+	});
 
 	ATLAS_LOG_CORE(Log, "SaveSystem initialized");
 }
@@ -41,7 +45,7 @@ void FAtlasSaveSystem::Initialize(UAtlasGameInstanceSubsystem* Subsystem)
 void FAtlasSaveSystem::Shutdown()
 {
 	bShuttingDown = true;
-	PendingSaveRequests.Reset();
+	SaveScheduler.Shutdown();
 	PendingSnapshot.Reset();
 	OwningSubsystem = nullptr;
 
@@ -58,20 +62,17 @@ void FAtlasSaveSystem::SaveGame()
 
 bool FAtlasSaveSystem::RequestSave(const FString& SlotName)
 {
-	return EnqueueSaveRequest(SlotName, false);
+	return SaveScheduler.RequestManualSave(SlotName);
+}
+
+bool FAtlasSaveSystem::RequestEventSave(const FString& SlotName)
+{
+	return SaveScheduler.RequestEventSave(SlotName);
 }
 
 bool FAtlasSaveSystem::RequestAutosave()
 {
-	FString AutosaveSlotName;
-	int32 AutosaveIndex = INDEX_NONE;
-	if (!FAtlasAutosaveManager::ReserveNextAutosaveSlot(AutosaveSlotName, AutosaveIndex))
-	{
-		ATLAS_LOG_CORE(Error, "Autosave request rejected: failed to reserve autosave slot");
-		return false;
-	}
-
-	return EnqueueSaveRequest(AutosaveSlotName, true, AutosaveIndex);
+	return SaveScheduler.RequestAutosave();
 }
 
 bool FAtlasSaveSystem::SaveGameToSlot(const FString& SlotName, int32 UserIndex)
@@ -200,53 +201,25 @@ UWorld* FAtlasSaveSystem::ResolveWorld() const
 	return GameInstance ? GameInstance->GetWorld() : nullptr;
 }
 
-bool FAtlasSaveSystem::EnqueueSaveRequest(const FString& SlotName, bool bAutosave, int32 AutosaveIndex)
-{
-	check(IsInGameThread());
-
-	if (bShuttingDown)
-	{
-		ATLAS_LOG_CORE(Warning, "Save request rejected during shutdown: slot=%s", *SlotName);
-		return false;
-	}
-
-	if (SlotName.IsEmpty())
-	{
-		ATLAS_LOG_CORE(Error, "Save request rejected: slot name is empty");
-		return false;
-	}
-
-	FAtlasQueuedSaveRequest Request;
-	Request.SlotName = SlotName;
-	Request.bAutosave = bAutosave;
-	Request.AutosaveIndex = AutosaveIndex;
-	PendingSaveRequests.Add(MoveTemp(Request));
-
-	ATLAS_LOG_CORE(Log, "Save request queued: slot=%s autosave=%s autosaveIndex=%d queueSize=%d",
-		*SlotName,
-		bAutosave ? TEXT("true") : TEXT("false"),
-		AutosaveIndex,
-		PendingSaveRequests.Num());
-
-	ProcessNextSaveRequest();
-	return true;
-}
-
 void FAtlasSaveSystem::ProcessNextSaveRequest()
 {
 	check(IsInGameThread());
 
-	if (bShuttingDown || bSaveInProgress || PendingSaveRequests.IsEmpty())
+	if (bShuttingDown || bSaveInProgress || !SaveScheduler.HasPendingRequests())
 	{
 		return;
 	}
 
-	FAtlasQueuedSaveRequest Request = MoveTemp(PendingSaveRequests[0]);
-	PendingSaveRequests.RemoveAt(0);
+	FAtlasScheduledSaveRequest Request;
+	if (!SaveScheduler.PopNextRequest(Request))
+	{
+		return;
+	}
+
 	StartSaveRequest(Request);
 }
 
-void FAtlasSaveSystem::StartSaveRequest(const FAtlasQueuedSaveRequest& Request)
+void FAtlasSaveSystem::StartSaveRequest(const FAtlasScheduledSaveRequest& Request)
 {
 	check(IsInGameThread());
 
@@ -267,30 +240,33 @@ void FAtlasSaveSystem::StartSaveRequest(const FAtlasQueuedSaveRequest& Request)
 	FAtlasWorldSnapshot WorldSnapshot = FAtlasSaveCollector::CollectWorld(World);
 	const int32 ActorCount = WorldSnapshot.Actors.Num();
 	const FString SlotName = Request.SlotName;
-	const bool bAutosave = Request.bAutosave;
-	const int32 AutosaveIndex = Request.AutosaveIndex;
+	const FAtlasScheduledSaveRequest CompletedRequest = Request;
 	TWeakPtr<FAtlasSaveSystem> WeakSaveSystem = AsShared();
 
-	ATLAS_LOG_CORE(Log, "Save collection finished: slot=%s autosaveIndex=%d actors=%d", *SlotName, AutosaveIndex, ActorCount);
+	ATLAS_LOG_CORE(Log, "Save collection finished: slot=%s priority=%d autosaveIndex=%d actors=%d",
+		*SlotName,
+		static_cast<int32>(Request.Priority),
+		Request.AutosaveIndex,
+		ActorCount);
 
-	Async(EAsyncExecution::ThreadPool, [WeakSaveSystem, SlotName, bAutosave, ActorCount, WorldSnapshot = MoveTemp(WorldSnapshot)]() mutable
+	Async(EAsyncExecution::ThreadPool, [WeakSaveSystem, CompletedRequest, ActorCount, WorldSnapshot = MoveTemp(WorldSnapshot)]() mutable
 	{
 		TArray<uint8> BinaryData;
 		const bool bSerialized = FAtlasBinaryWriter::Serialize(WorldSnapshot, BinaryData);
-		const bool bSaved = bSerialized && FAtlasFileStorage::SaveToSlot(SlotName, BinaryData);
+		const bool bSaved = bSerialized && FAtlasFileStorage::SaveToSlot(CompletedRequest.SlotName, BinaryData);
 		const int32 ByteCount = BinaryData.Num();
 
-		AsyncTask(ENamedThreads::GameThread, [WeakSaveSystem, SlotName, bAutosave, bSaved, ActorCount, ByteCount]()
+		AsyncTask(ENamedThreads::GameThread, [WeakSaveSystem, CompletedRequest, bSaved, ActorCount, ByteCount]()
 		{
 			if (TSharedPtr<FAtlasSaveSystem> SaveSystem = WeakSaveSystem.Pin())
 			{
-				SaveSystem->HandleSaveCompleted(SlotName, bAutosave, bSaved, ActorCount, ByteCount);
+				SaveSystem->HandleSaveCompleted(CompletedRequest, bSaved, ActorCount, ByteCount);
 			}
 		});
 	});
 }
 
-void FAtlasSaveSystem::HandleSaveCompleted(const FString& SlotName, bool bAutosave, bool bSuccess, int32 ActorCount, int32 ByteCount)
+void FAtlasSaveSystem::HandleSaveCompleted(const FAtlasScheduledSaveRequest& Request, bool bSuccess, int32 ActorCount, int32 ByteCount)
 {
 	check(IsInGameThread());
 
@@ -298,17 +274,21 @@ void FAtlasSaveSystem::HandleSaveCompleted(const FString& SlotName, bool bAutosa
 
 	if (bSuccess)
 	{
-		ATLAS_LOG_CORE(Log, "Save completed: slot=%s autosave=%s actors=%d bytes=%d",
-			*SlotName,
-			bAutosave ? TEXT("true") : TEXT("false"),
+		ATLAS_LOG_CORE(Log, "Save completed: slot=%s priority=%d autosave=%s event=%s actors=%d bytes=%d",
+			*Request.SlotName,
+			static_cast<int32>(Request.Priority),
+			Request.bAutosave ? TEXT("true") : TEXT("false"),
+			Request.bEventSave ? TEXT("true") : TEXT("false"),
 			ActorCount,
 			ByteCount);
 	}
 	else
 	{
-		ATLAS_LOG_CORE(Error, "Save failed: slot=%s autosave=%s actors=%d bytes=%d",
-			*SlotName,
-			bAutosave ? TEXT("true") : TEXT("false"),
+		ATLAS_LOG_CORE(Error, "Save failed: slot=%s priority=%d autosave=%s event=%s actors=%d bytes=%d",
+			*Request.SlotName,
+			static_cast<int32>(Request.Priority),
+			Request.bAutosave ? TEXT("true") : TEXT("false"),
+			Request.bEventSave ? TEXT("true") : TEXT("false"),
 			ActorCount,
 			ByteCount);
 	}

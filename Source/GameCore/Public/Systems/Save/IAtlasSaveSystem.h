@@ -31,6 +31,13 @@ public:
 	virtual bool RequestSave(const FString& SlotName) = 0;
 
 	/*
+	 * Queues a debounced event-driven save request.
+	 *
+	 * @return true if the request was accepted
+	 */
+	virtual bool RequestEventSave(const FString& SlotName) = 0;
+
+	/*
 	 * Queues an async autosave request.
 	 *
 	 * @return true if the request was accepted

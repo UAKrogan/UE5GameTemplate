@@ -2,6 +2,7 @@
 
 #include "SaveGame/AtlasSaveGameTypes.h"
 #include "Systems/Save/IAtlasSaveSystem.h"
+#include "Systems/Save/AtlasSaveScheduler.h"
 #include "Systems/WorldState/AtlasWorldSnapshotTypes.h"
 
 class UAtlasGameInstanceSubsystem;
@@ -33,6 +34,7 @@ public:
 
 	virtual void SaveGame() override;
 	virtual bool RequestSave(const FString& SlotName) override;
+	virtual bool RequestEventSave(const FString& SlotName) override;
 	virtual bool RequestAutosave() override;
 	virtual bool SaveGameToSlot(const FString& SlotName, int32 UserIndex = 0) override;
 	virtual FString GetDefaultSlotName() const override;
@@ -48,21 +50,13 @@ public:
 	virtual bool GetPendingSnapshot(FAtlasSaveGameSnapshot& OutSnapshot) const override;
 
 private:
-	struct FAtlasQueuedSaveRequest
-	{
-		FString SlotName;
-		int32 AutosaveIndex = INDEX_NONE;
-		bool bAutosave = false;
-	};
-
 	FAtlasSaveGameSnapshot BuildSnapshotForSave(const FString& SlotName, int32 UserIndex) const;
 	FString ResolveCurrentMapName() const;
 	UWorld* ResolveWorld() const;
 
-	bool EnqueueSaveRequest(const FString& SlotName, bool bAutosave, int32 AutosaveIndex = INDEX_NONE);
 	void ProcessNextSaveRequest();
-	void StartSaveRequest(const FAtlasQueuedSaveRequest& Request);
-	void HandleSaveCompleted(const FString& SlotName, bool bAutosave, bool bSuccess, int32 ActorCount, int32 ByteCount);
+	void StartSaveRequest(const FAtlasScheduledSaveRequest& Request);
+	void HandleSaveCompleted(const FAtlasScheduledSaveRequest& Request, bool bSuccess, int32 ActorCount, int32 ByteCount);
 
 	/*
 	 * Reference to owning subsystem.
@@ -70,7 +64,7 @@ private:
 	UAtlasGameInstanceSubsystem* OwningSubsystem = nullptr;
 
 	FAtlasSaveGameSnapshot PendingSnapshot;
-	TArray<FAtlasQueuedSaveRequest> PendingSaveRequests;
+	FAtlasSaveScheduler SaveScheduler;
 
 	bool bSaveInProgress = false;
 	bool bShuttingDown = false;

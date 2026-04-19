@@ -1,5 +1,6 @@
-﻿#pragma once
+#pragma once
 
+#include "SaveGame/AtlasSaveGameTypes.h"
 #include "Systems/Save/IAtlasSaveSystem.h"
 
 class UAtlasGameInstanceSubsystem;
@@ -28,10 +29,27 @@ public:
 	}
 
 	virtual void SaveGame() override;
+	virtual bool SaveGameToSlot(const FString& SlotName, int32 UserIndex = 0) override;
+	virtual FString GetDefaultSlotName() const override;
+	virtual bool DoesSaveExist(const FString& SlotName, int32 UserIndex = 0) const override;
+	virtual void ClearPendingSnapshot() override;
+	virtual void SetIntValue(FName Key, int32 Value) override;
+	virtual void SetFloatValue(FName Key, float Value) override;
+	virtual void SetStringValue(FName Key, const FString& Value) override;
+	virtual void SetVectorValue(FName Key, const FVector& Value) override;
+	virtual void SetRotatorValue(FName Key, const FRotator& Value) override;
+	virtual void SetTransformValue(FName Key, const FTransform& Value) override;
+	virtual bool RemoveValue(FName Key) override;
+	virtual bool GetPendingSnapshot(FAtlasSaveGameSnapshot& OutSnapshot) const override;
 
 private:
+	FAtlasSaveGameSnapshot BuildSnapshotForSave(const FString& SlotName, int32 UserIndex) const;
+	FString ResolveCurrentMapName() const;
+
 	/*
 	 * Reference to owning subsystem.
 	 */
 	UAtlasGameInstanceSubsystem* OwningSubsystem = nullptr;
+
+	FAtlasSaveGameSnapshot PendingSnapshot;
 };

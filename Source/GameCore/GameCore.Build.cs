@@ -15,7 +15,8 @@ public class GameCore : ModuleRules
 
 		PublicDependencyModuleNames.AddRange([
 			"Core", "CoreUObject", "Engine",
-			"GameUtils"
+			"GameUtils",
+			"GameplayAbilities", "GameplayTags", "GameplayTasks"
 		]);
 
 		PrivateDependencyModuleNames.AddRange([]);

@@ -24,9 +24,23 @@ public:
 	virtual void SaveGame() = 0;
 
 	/*
+	 * Queues an async save request for a specific slot.
+	 *
+	 * @return true if the request was accepted
+	 */
+	virtual bool RequestSave(const FString& SlotName) = 0;
+
+	/*
+	 * Queues an async autosave request.
+	 *
+	 * @return true if the request was accepted
+	 */
+	virtual bool RequestAutosave() = 0;
+
+	/*
 	 * Saves the current snapshot to a specific slot.
 	 *
-	 * @return true if the slot was written successfully
+	 * @return true if the save request was accepted
 	 */
 	virtual bool SaveGameToSlot(const FString& SlotName, int32 UserIndex = 0) = 0;
 

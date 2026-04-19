@@ -2,17 +2,20 @@
 
 #include "SaveGame/AtlasSaveGameTypes.h"
 #include "Systems/Save/IAtlasSaveSystem.h"
+#include "Systems/WorldState/AtlasWorldSnapshotTypes.h"
 
 class UAtlasGameInstanceSubsystem;
+class UWorld;
 
 /*
  * Concrete implementation of Save system.
  *
  * Handles:
- * - Collecting savable data
- * - Serializing game state
+ * - Collecting savable data on the game thread
+ * - Serializing snapshots asynchronously
+ * - Writing binary save data asynchronously
  */
-class GAMECORE_API FAtlasSaveSystem : public IAtlasSaveSystem
+class GAMECORE_API FAtlasSaveSystem : public IAtlasSaveSystem, public TSharedFromThis<FAtlasSaveSystem>
 {
 public:
 	virtual void Initialize(UAtlasGameInstanceSubsystem* Subsystem) override;
@@ -29,6 +32,8 @@ public:
 	}
 
 	virtual void SaveGame() override;
+	virtual bool RequestSave(const FString& SlotName) override;
+	virtual bool RequestAutosave() override;
 	virtual bool SaveGameToSlot(const FString& SlotName, int32 UserIndex = 0) override;
 	virtual FString GetDefaultSlotName() const override;
 	virtual bool DoesSaveExist(const FString& SlotName, int32 UserIndex = 0) const override;
@@ -43,8 +48,21 @@ public:
 	virtual bool GetPendingSnapshot(FAtlasSaveGameSnapshot& OutSnapshot) const override;
 
 private:
+	struct FAtlasQueuedSaveRequest
+	{
+		FString SlotName;
+		bool bAutosave = false;
+	};
+
 	FAtlasSaveGameSnapshot BuildSnapshotForSave(const FString& SlotName, int32 UserIndex) const;
 	FString ResolveCurrentMapName() const;
+	FString GetAutosaveSlotName() const;
+	UWorld* ResolveWorld() const;
+
+	bool EnqueueSaveRequest(const FString& SlotName, bool bAutosave);
+	void ProcessNextSaveRequest();
+	void StartSaveRequest(const FAtlasQueuedSaveRequest& Request);
+	void HandleSaveCompleted(const FString& SlotName, bool bAutosave, bool bSuccess, int32 ActorCount, int32 ByteCount);
 
 	/*
 	 * Reference to owning subsystem.
@@ -52,4 +70,8 @@ private:
 	UAtlasGameInstanceSubsystem* OwningSubsystem = nullptr;
 
 	FAtlasSaveGameSnapshot PendingSnapshot;
+	TArray<FAtlasQueuedSaveRequest> PendingSaveRequests;
+
+	bool bSaveInProgress = false;
+	bool bShuttingDown = false;
 };

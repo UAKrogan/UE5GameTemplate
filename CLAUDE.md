@@ -8,26 +8,19 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Engine: `5.7` | Project descriptor: `Game.uproject` | Targets: `GameTarget`, `GameEditorTarget`
 
+Enabled plugins: `GameplayAbilities`, `GameFeatures`, `ModularGameplay`, `CommonUI` (+ `ModelingToolsEditorMode`, editor-only).
+
 ## Build Commands
 
 All builds go through UnrealBuildTool. There is no standalone CLI build script; use the IDE or UBT directly.
 
-**Generate project files (run from repo root):**
 ```
-# Via UnrealVersionSelector (right-click Game.uproject > "Generate Visual Studio project files")
-# Or via Rider: open Game.uproject directly
-```
-
-**Build from command line (UBT):**
-```
-# Editor build
 "<UE5_ROOT>\Engine\Binaries\DotNET\UnrealBuildTool\UnrealBuildTool.exe" GameEditor Win64 Development "D:\Projects\UnrealEngine\UE5GameTemplate\Game.uproject"
-
-# Game build
-"<UE5_ROOT>\Engine\Binaries\DotNET\UnrealBuildTool\UnrealBuildTool.exe" Game Win64 Development "D:\Projects\UnrealEngine\UE5GameTemplate\Game.uproject"
 ```
 
-There are no automated tests in the project yet. When tests are added they should use Unreal's Automation framework (`FAutomationTestBase`).
+(Use target `Game` for the non-editor build. Local engine root: `D:\UnrealEngine\UE_5.7`.)
+
+There are no automated tests yet. When added they should use Unreal's Automation framework (`FAutomationTestBase`).
 
 ## Module Architecture
 
@@ -35,33 +28,46 @@ The allowed dependency graph is strictly one-way — modules may only depend on 
 
 ```
 Game → GameActors, GameCore, GameUI, GameUtils
-GameActors → GameUtils
-GameCore → GameUtils  (+ GameplayAbilities, GameplayTags, GameplayTasks)
-GameUI → GameUtils  (+ UMG, CommonUI, Slate, SlateCore)
+GameActors → GameUtils  (+ GAS modules, EnhancedInput, AIModule, ModularGameplay, GameFeatures)
+GameCore → GameUtils  (+ GAS modules, DeveloperSettings; private: UMG/Slate for loading widget, Json)
+GameUI → GameUtils  (+ UMG, CommonUI, CommonInput, InputCore, DeveloperSettings, GameFeatures)
 GameUtils → (no local deps)
 ```
 
-**Never create cross-module dependencies that go against this graph.** Feature plugins and the `Game` host module are the only places that may depend on multiple local modules simultaneously.
+**Never create cross-module dependencies that go against this graph.** GameActors/GameUI/GameCore must never depend on each other. Feature plugins and the `Game` host module are the only places that may depend on multiple local modules simultaneously. When a plan-level design conflicts with this graph (it happens), the graph wins — bridge with soft object paths, delegates, or data assets.
 
 ### Module Responsibilities
 
 | Module | Purpose |
 |---|---|
-| `Game` | Thin host. `UAtlasGameInstance` bootstrap only. `IMPLEMENT_PRIMARY_GAME_MODULE`. |
-| `GameActors` | GAS-ready base classes: `AAtlasCharacter`, `AAtlasPawn`, `AAtlasPlayerController`, `AAtlasAIController`, `AAtlasGameMode`, `AAtlasGameState`, `AAtlasPlayerState`. Provides overridable `Initialize*()` hooks, no gameplay logic yet. |
-| `GameCore` | Runtime systems, subsystem orchestration, save/load pipeline, serialization, GAS adapters. |
-| `GameUI` | `UAtlasUISubsystem` (`UGameInstanceSubsystem`) for screen flow. No widget assets yet. |
+| `Game` | Thin host. `UAtlasGameInstance` bootstrap (`Init` + `OnStart` → `StartGameFlow`). `IMPLEMENT_PRIMARY_GAME_MODULE`. |
+| `GameCore` | Runtime systems + subsystem orchestration: `UAtlasGameInstanceSubsystem` (service locator), game flow / level transition / loading screen subsystems, `UAtlasAssetManager`, `UAtlasDeveloperSettings`, native tags (`AtlasGameplayTags`), save/load pipeline, `AAtlasPostLoadTrigger`. |
+| `GameActors` | GAS-ready base classes (`AAtlasCharacter`, `AAtlasPawn`, controllers, game mode/state, `AAtlasPlayerState` owning the player ASC), extension components (PawnExt/AbilityExt/InputExt/MovementExt), `UAtlasAbilitySystemComponent`, `UAtlasBaseAttributeSet`, `UAtlasBaseGameplayAbility`, data assets (`UAtlasPawnData`, `UAtlasAbilitySet`, `UAtlasInputConfigData`), feature actions (AddAbilities, AddInputConfig). |
+| `GameUI` | `UAtlasUISubsystem` (layered screen stack), `UAtlasRootWidget` + base widgets, `UAtlasScreenDefinition`/`UAtlasScreenRegistry`, `UAtlasUIDeveloperSettings`, `UAtlasGlyphSubsystem`, feature actions (AddScreens, AddHUDElements). No widget assets — authored per game. |
 | `GameUtils` | Log categories, logging macros, assertion helpers. Nothing else. |
 
 ## Runtime Lifecycle
 
-`UAtlasGameInstance::Init()` → resolves `UAtlasGameInstanceSubsystem`
+`UAtlasGameInstance::Init()` → resolves `UAtlasGameInstanceSubsystem`; `OnStart()` → `UAtlasGameFlowSubsystem::StartGameFlow()` (auto-travel to MainMenuMap; skipped in PIE).
 
-`UAtlasGameInstanceSubsystem` (in `GameCore`) is the central orchestrator:
+`UAtlasGameInstanceSubsystem` orchestrates pure C++ systems:
 1. `Initialize()` → `RegisterSystems()` (delegates to `FAtlasSystemsRegistry`) → `InitializeSystems()`
 2. `Deinitialize()` → `ShutdownSystems()` (reverse registration order)
 
 Systems are stored as `TMap<FName, TSharedPtr<IAtlasSystem>>` and looked up by interface via `GetSystem<T>()`, which calls `SupportsInterface(T::InterfaceName())`.
+
+Engine subsystems (`UGameInstanceSubsystem`) are used where UObject lifecycle/Blueprint access matters: `UAtlasGameFlowSubsystem` (state machine), `UAtlasLevelTransitionSubsystem` (PreTravel→Traveling→PostLoad with `OnPreTravel`/`OnPostLoad`/`OnTransitionFailed`), `UAtlasLoadingScreenSubsystem` (viewport-level widget surviving travel), `UAtlasUISubsystem` (GameUI).
+
+## GAS Setup
+
+- Player pawns: ASC lives on `AAtlasPlayerState` (survives respawn); AI pawns: pawn-owned ASC created by `UAtlasAbilityExtensionComponent` from `AAtlasAIController::OnPossess`.
+- `UAtlasPawnExtensionComponent` is the init hub: possession hooks (`PossessedBy`/`OnRep_Controller`/`OnRep_PlayerState`) call `HandleControllerChanged()`; grants `UAtlasPawnData` ability sets on authority; fires `OnAbilitySystemInitialized`.
+- Input: tag-based (`Atlas.Input.Ability.*`). `UAtlasInputExtensionComponent` (on the player controller, wired from the pawn's `SetupPlayerInputComponent`) binds input actions from `UAtlasInputConfigData` to `AbilityInputTagPressed/Released` on the ASC. Input never references ability classes.
+- All base actors are Modular Gameplay receivers (`AddGameFrameworkComponentReceiver` in `PreInitializeComponents`, `NAME_GameActorReady` in `BeginPlay`, remove in `EndPlay`).
+
+## UI System
+
+Screens are pushed by ID: `UAtlasUISubsystem::PushScreen(FName)` resolves a `UAtlasScreenDefinition` through the registry configured in **Atlas UI** settings (`UAtlasUIDeveloperSettings`, in GameUI — not GameCore, because GameUI must not depend on GameCore). Root widget layers: Game < Menu < Modal < Notification < Loading; constructed procedurally when no Blueprint root is configured. Input mode is derived from the top-most active screen.
 
 ## Save/Load System
 
@@ -74,28 +80,17 @@ FAtlasSaveScheduler                    ← priority queue: Manual > Event > Auto
 FAtlasAutosaveManager                  ← ring-buffer of 5 slots (Autosave_0..4)
 FAtlasBinaryWriter / FAtlasBinaryReader ← versioned chunked binary serialization
 FAtlasSaveCollector                    ← walks world, collects IAtlasSavable actors
+FAtlasSaveMigrationManager             ← sequential vN→vN+1 snapshot migrations
+FAtlasSaveSlotManifest                 ← JSON slot manifest (SaveManifest.json)
 ```
 
-**Save data types:**
-- `FAtlasSaveGameSnapshot` — flat key/value store (int, float, string, vector, rotator, transform) + `FAtlasSaveGameMetadata`
-- `FAtlasWorldSnapshot` → `TArray<FAtlasActorSnapshot>` → `TArray<FAtlasDataChunk>` (named raw binary payloads)
+**Actor participation:** add `UAtlasSavableComponent` (stable `FGuid ActorId`), implement `IAtlasSavable` (`CaptureState`/`RestoreState`); `UAtlasGASSaveAdapter` covers ASC attributes/effects.
 
-**Actor participation in save/load:**
-- Add `UAtlasSavableComponent` to give an actor a stable `FGuid ActorId`
-- Implement `IAtlasSavable` (`CaptureState` / `RestoreState`) on the actor or its components
-- `UAtlasGASSaveAdapter` — drop-in component that captures/restores `AbilitySystemComponent` attributes and active gameplay effects
-- `UAtlasInventorySaveAdapter` — stub adapter for future inventory systems
+**Flow:** requests are game-thread; world collection is synchronous; serialization + file I/O run async and complete back on the game thread. `bSaveInProgress`/`bLoadInProgress` are `std::atomic<bool>`. Level transitions can checkpoint before travel (`bSaveCheckpointBeforeTravel`) and restore a slot post-load (`LoadSlotOnPostLoad`).
 
-**Save flow (game thread → async → game thread):**
-1. `FAtlasSaveSystem::RequestSave()` enqueues via `FAtlasSaveScheduler`
-2. `ProcessNextSaveRequest()` calls `FAtlasSaveCollector` to build `FAtlasWorldSnapshot`
-3. `FAtlasBinaryWriter::Serialize()` runs async
-4. File write runs async; `HandleSaveCompleted()` fires on game thread
+## Game Feature Plugins
 
-**Load flow (game thread → async → game thread):**
-1. `FAtlasLoadSystem::RequestLoad()` reads file async
-2. `FAtlasBinaryReader` deserializes async
-3. `ApplyWorldSnapshot()` runs on game thread: resolves existing actors by `FGuid`, spawns missing ones, calls `RestoreState()` on each `IAtlasSavable`
+Live under `Plugins/GameFeatures/`; depend on source modules, never the reverse, never on each other. Custom actions: `Atlas: Add Abilities`, `Atlas: Add Input Config` (GameActors), `Atlas: Add Screens`, `Atlas: Add HUD Elements` (GameUI). Two `[TEMPLATE EXAMPLE]` content-only sample plugins exist; their READMEs list the editor assets to author.
 
 ## Logging Conventions
 
@@ -123,6 +118,8 @@ Assertions:
 - `PublicIncludePaths` / `PrivateIncludePaths` must be set explicitly per module; never rely on transitive include pollution
 - Prefer `GameInstanceSubsystem` over singletons or static state
 - Avoid `Tick` unless strictly necessary
+- Native tags live in `GameCore/Public/Tags/AtlasGameplayTags.h` (`Atlas.Category.Subcategory` convention)
+- Full conventions: `docs/guides/conventions.md`
 
 ## Adding a New System
 
@@ -132,8 +129,14 @@ Assertions:
 
 ## Configuration
 
-- Default game instance: `/Script/Game.AtlasGameInstance` (set in `Config/DefaultEngine.ini`)
-- Default startup map: `/Engine/Maps/Templates/OpenWorld` (replace when a project map is created)
+- Default game instance: `/Script/Game.AtlasGameInstance`; asset manager: `/Script/GameCore.AtlasAssetManager` (both `Config/DefaultEngine.ini`)
+- Framework settings: `[/Script/GameCore.AtlasDeveloperSettings]` in `Config/DefaultGame.ini` (maps, save, features) — Project Settings → Game → Atlas Framework
+- UI settings: `UAtlasUIDeveloperSettings` — Project Settings → Game → Atlas UI (screen registry, root/loading/notification widget classes, glyphs)
+- Default startup map: `/Engine/Maps/Templates/OpenWorld` (replace when project maps are created)
 - Input classes: `EnhancedPlayerInput` + `EnhancedInputComponent` (`Config/DefaultInput.ini`)
-- CommonUI accept key handling: `Config/DefaultGame.ini`
 - Graphics: DX12, SM6, ray tracing, VSM, Substrate, Lumen — editor/dev only, no shipping config yet
+
+## Docs
+
+- `docs/guides/` — user-facing guides (start at `README.md` there)
+- `docs/plan/` — original design/planning docs (00–13); implementation followed the roadmap in `12_implementation_roadmap.md`

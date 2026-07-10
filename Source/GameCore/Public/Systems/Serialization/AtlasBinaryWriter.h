@@ -6,6 +6,17 @@
 #include "Systems/WorldState/AtlasWorldSnapshotTypes.h"
 
 /*
+ * Well-known chunk names shared by the binary writer and reader.
+ */
+namespace AtlasBinarySerialization
+{
+	inline const FName HeaderChunkName = TEXT("Header");
+	inline const FName WorldSnapshotChunkName = TEXT("WorldSnapshot");
+	inline const FName ActorSnapshotChunkName = TEXT("ActorSnapshot");
+	inline const FName DataChunkName = TEXT("DataChunk");
+}
+
+/*
  * Binary writer for Atlas world snapshots.
  *
  * Uses FArchive internally and writes a versioned, chunked payload to memory.

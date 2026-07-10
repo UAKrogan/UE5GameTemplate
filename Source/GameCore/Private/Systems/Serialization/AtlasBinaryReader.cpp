@@ -3,14 +3,6 @@
 #include "Systems/Serialization/AtlasBinaryWriter.h"
 #include "Logging/AtlasLogMacros.h"
 
-namespace AtlasBinarySerialization
-{
-	const FName HeaderChunkName = TEXT("Header");
-	const FName WorldSnapshotChunkName = TEXT("WorldSnapshot");
-	const FName ActorSnapshotChunkName = TEXT("ActorSnapshot");
-	const FName DataChunkName = TEXT("DataChunk");
-}
-
 FAtlasBinaryReader::FAtlasBinaryReader(const TArray<uint8>& InInputData)
 	: InputData(InInputData)
 	, Archive(InputData, true)

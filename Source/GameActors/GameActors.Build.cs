@@ -15,6 +15,7 @@ public class GameActors : ModuleRules
 
 		PublicDependencyModuleNames.AddRange([
 			"Core", "CoreUObject", "Engine", "InputCore", "EnhancedInput", "AIModule",
+			"GameplayAbilities", "GameplayTags", "GameplayTasks",
 			"GameUtils"
 		]);
 

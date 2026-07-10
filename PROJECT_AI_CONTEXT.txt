@@ -2,1498 +2,487 @@ PROJECT AI CONTEXT
 ==================
 
 Last rescanned
-- Date: 2026-05-08
+- Date: 2026-07-10
 - Workspace: D:\Projects\UnrealEngine\UE5GameTemplate
-- Review method: static file/code inspection from the current working tree.
-- Build/test status: no Unreal build or editor validation was run during this update.
+- Review method: full implementation pass (phases 0-11) plus static inspection of the final tree.
+- Build/test status: GameEditor and Game targets (Win64 Development, UBT, engine at D:\UnrealEngine\UE_5.7) build clean. No PIE/editor runtime validation was performed; no automated tests exist.
 
 
 PROJECT SUMMARY
 ===============
 
 Project
-- Name: Game
+- Name: Game (template identity: UE5GameTemplate)
 - Descriptor: Game.uproject
 - Engine association: Unreal Engine 5.7
 - Project type: C++ Unreal Engine project
-- Architecture name/style: Atlas runtime architecture
+- Architecture name/style: Atlas framework (all types carry the Atlas prefix)
 
 Purpose
-- This repository is a modular UE 5.7 C++ game foundation.
-- It is architecture-first: it provides module boundaries, runtime bootstrap, game-instance subsystems, framework actor classes, logging utilities, and an increasingly real save/load stack.
-- Gameplay, authored UI, custom maps, production data assets, and real game rules are still mostly absent.
+- Reusable UE 5.7 C++ framework intended as a base for different games.
+- NOT a game: no gameplay mechanics, no authored widgets, no production maps.
+- Never add game-specific mechanics (combat, inventory, quests, economy) to the source modules unless explicitly asked for an isolated example. Gameplay belongs in Game Feature plugins or game-project subclasses.
 
-High-level current state
-- Runtime modules:
-  - Game
-  - GameActors
-  - GameCore
-  - GameUI
-  - GameUtils
-- Game instance:
-  - UAtlasGameInstance
-  - Configured in Config/DefaultEngine.ini as /Script/Game.AtlasGameInstance
-- Core orchestration:
-  - UAtlasGameInstanceSubsystem owns registered Atlas systems.
-  - FAtlasSystemsRegistry registers FAtlasSaveSystem and FAtlasLoadSystem.
-- Save/load:
-  - No longer only placeholders.
-  - Current implementation includes savable actor/component opt-in, world snapshots, binary serialization, file storage, async save/load, priority save scheduling, autosave ring slots, inventory adapter, and GAS adapter.
-  - The legacy FAtlasSaveGameSnapshot key/value metadata API still exists but is not the primary persisted payload in the current binary world snapshot path.
-- UI:
-  - UAtlasUISubsystem exists but only logs OpenScreen/CloseScreen.
-- Gameplay framework:
-  - Base classes exist for character, pawn, controllers, game mode, game state, and player state.
-  - They expose initialization hooks but contain no gameplay behavior.
-- Content:
-  - Essentially empty except collections/developer folders.
-  - Project starts in the engine Open World template map.
+Implementation status
+- The full planning roadmap (docs/plan 00-13, phases 0-11) is implemented:
+  0. baseline cleanup, 1. module deps + plugins, 2. settings/asset manager/tags,
+  3. Common UI foundation, 4. game flow + level transitions + loading screen,
+  5. GAS-ready actors, 6. Enhanced Input -> ability binding,
+  7. Game Features / Modular Gameplay, 8. sample feature plugin scaffolding,
+  9. save/load hardening, 10. documentation, 11. movement (vehicles/mounts/camera).
+- The plan documents were deleted after implementation (git history has them);
+  docs/plan/README.md tracks the few remaining unimplemented remnants.
+- docs/guides/ is the source of truth for how each system works.
 
 
 ACTIVE REPOSITORY STATE NOTES
 =============================
 
-Git status observed
-- Several paths under Source/GameSystems are reported as AD.
-- PROJECT_AI_CONTEXT.txt is untracked.
+Git
+- Branch: master, clean working tree at the time of this update.
+- Commit history is one commit per phase ("Phase 0" ... "Phase 11") plus docs
+  and commenting passes. The old Source/GameSystems index residue was removed;
+  Source/GameCore is and always was the live implementation.
 
-Important interpretation
-- Treat Source/GameCore as the live implementation.
-- Source/GameSystems entries are migration residue in Git state, not the active source layout.
-- Do not resurrect a GameSystems module unless explicitly asked.
-- Stale comments still mention GameSystems in:
-  - Source/GameCore/Public/Systems/AtlasSystemsRegistry.h
-  - Source/GameCore/Private/Systems/AtlasSystemsRegistry.cpp
-  - Source/Game/Private/Game.cpp commented module-load examples
+Generated/local folders present (not source of truth)
+- Binaries/, DerivedDataCache/, Intermediate/, Saved/, Plugins/Developer/RiderLink/
 
-Generated/local folders present
-- Binaries/
-- DerivedDataCache/
-- Intermediate/
-- Saved/
-- Plugins/Developer/RiderLink/
-
-These are local/generated or IDE/developer support artifacts. Source of truth is Source/, Config/, Game.uproject, README.md, and this file.
+Source of truth
+- Source/, Config/, Game.uproject, Plugins/GameFeatures/, docs/, CLAUDE.md,
+  README.md, and this file.
 
 
 PROJECT DESCRIPTOR
 ==================
 
 File: Game.uproject
-
-EngineAssociation
-- 5.7
-
-Runtime modules in descriptor
-- Game
-  - Type: Runtime
-  - LoadingPhase: Default
-- GameActors
-  - Type: Runtime
-- GameCore
-  - Type: Runtime
-- GameUI
-  - Type: Runtime
-- GameUtils
-  - Type: Runtime
-
-Enabled project plugin
-- ModelingToolsEditorMode
-  - Enabled: true
-  - TargetAllowList: Editor
-
-Local developer plugin present
-- Plugins/Developer/RiderLink
-
-
-SOURCE LAYOUT
-=============
-
-Top level source files
-- Source/Game.Target.cs
-- Source/GameEditor.Target.cs
-
-Modules
-- Source/Game/
-- Source/GameActors/
-- Source/GameCore/
-- Source/GameUI/
-- Source/GameUtils/
-
-Source tree summary
-
-Game
-- Source/Game/Game.Build.cs
-- Source/Game/Public/Game.h
-- Source/Game/Private/Game.cpp
-- Source/Game/Public/Runtime/AtlasGameInstance.h
-- Source/Game/Private/Runtime/AtlasGameInstance.cpp
-
-GameActors
-- Source/GameActors/GameActors.Build.cs
-- Source/GameActors/Public/GameActors.h
-- Source/GameActors/Private/GameActors.cpp
-- Source/GameActors/Public/Character/AtlasCharacter.h
-- Source/GameActors/Private/Character/AtlasCharacter.cpp
-- Source/GameActors/Public/Controller/AtlasAIController.h
-- Source/GameActors/Private/Controller/AtlasAIController.cpp
-- Source/GameActors/Public/Controller/AtlasPlayerController.h
-- Source/GameActors/Private/Controller/AtlasPlayerController.cpp
-- Source/GameActors/Public/GameMode/AtlasGameMode.h
-- Source/GameActors/Private/GameMode/AtlasGameMode.cpp
-- Source/GameActors/Public/GameState/AtlasGameState.h
-- Source/GameActors/Private/GameState/AtlasGameState.cpp
-- Source/GameActors/Public/Pawn/AtlasPawn.h
-- Source/GameActors/Private/Pawn/AtlasPawn.cpp
-- Source/GameActors/Public/PlayerState/AtlasPlayerState.h
-- Source/GameActors/Private/PlayerState/AtlasPlayerState.cpp
-
-GameCore
-- Source/GameCore/GameCore.Build.cs
-- Source/GameCore/Public/GameCore.h
-- Source/GameCore/Private/GameCore.cpp
-- Source/GameCore/Public/Interfaces/IAtlasSystem.h
-- Source/GameCore/Public/Subsystems/AtlasGameInstanceSubsystem.h
-- Source/GameCore/Private/Subsystems/AtlasGameInstanceSubsystem.cpp
-- Source/GameCore/Public/Systems/AtlasSystemsRegistry.h
-- Source/GameCore/Private/Systems/AtlasSystemsRegistry.cpp
-- Source/GameCore/Public/SaveGame/AtlasSaveGame.h
-- Source/GameCore/Private/SaveGame/AtlasSaveGame.cpp
-- Source/GameCore/Public/SaveGame/AtlasSaveGameTypes.h
-- Source/GameCore/Public/Systems/Save/IAtlasSaveSystem.h
-- Source/GameCore/Public/Systems/Save/AtlasSaveSystem.h
-- Source/GameCore/Private/Systems/Save/AtlasSaveSystem.cpp
-- Source/GameCore/Public/Systems/Save/AtlasSaveScheduler.h
-- Source/GameCore/Private/Systems/Save/AtlasSaveScheduler.cpp
-- Source/GameCore/Public/Systems/Save/AtlasSaveCollector.h
-- Source/GameCore/Private/Systems/Save/AtlasSaveCollector.cpp
-- Source/GameCore/Public/Systems/Save/AtlasAutosaveManager.h
-- Source/GameCore/Private/Systems/Save/AtlasAutosaveManager.cpp
-- Source/GameCore/Public/Systems/Load/IAtlasLoadSystem.h
-- Source/GameCore/Public/Systems/Load/AtlasLoadSystem.h
-- Source/GameCore/Private/Systems/Load/AtlasLoadSystem.cpp
-- Source/GameCore/Public/Systems/Savable/AtlasSavable.h
-- Source/GameCore/Private/Systems/Savable/AtlasSavable.cpp
-- Source/GameCore/Public/Systems/Savable/AtlasSavableComponent.h
-- Source/GameCore/Private/Systems/Savable/AtlasSavableComponent.cpp
-- Source/GameCore/Public/Systems/Savable/AtlasSavableTypes.h
-- Source/GameCore/Private/Systems/Savable/AtlasSavableTypes.cpp
-- Source/GameCore/Public/Systems/WorldState/AtlasWorldSnapshotTypes.h
-- Source/GameCore/Private/Systems/WorldState/AtlasWorldSnapshotTypes.cpp
-- Source/GameCore/Public/Systems/Serialization/AtlasBinaryWriter.h
-- Source/GameCore/Private/Systems/Serialization/AtlasBinaryWriter.cpp
-- Source/GameCore/Public/Systems/Serialization/AtlasBinaryReader.h
-- Source/GameCore/Private/Systems/Serialization/AtlasBinaryReader.cpp
-- Source/GameCore/Public/Systems/Serialization/AtlasSaveHeader.h
-- Source/GameCore/Public/Systems/Storage/AtlasFileStorage.h
-- Source/GameCore/Private/Systems/Storage/AtlasFileStorage.cpp
-- Source/GameCore/Public/Systems/Adapters/AtlasInventorySaveAdapter.h
-- Source/GameCore/Private/Systems/Adapters/AtlasInventorySaveAdapter.cpp
-- Source/GameCore/Public/Systems/Adapters/AtlasGASSaveAdapter.h
-- Source/GameCore/Private/Systems/Adapters/AtlasGASSaveAdapter.cpp
-
-GameUI
-- Source/GameUI/GameUI.Build.cs
-- Source/GameUI/Public/GameUI.h
-- Source/GameUI/Private/GameUI.cpp
-- Source/GameUI/Public/Subsystems/AtlasUISubsystem.h
-- Source/GameUI/Private/Subsystems/AtlasUISubsystem.cpp
-
-GameUtils
-- Source/GameUtils/GameUtils.Build.cs
-- Source/GameUtils/Public/GameUtils.h
-- Source/GameUtils/Private/GameUtils.cpp
-- Source/GameUtils/Public/Logging/AtlasLogChannels.h
-- Source/GameUtils/Private/Logging/AtlasLogChannels.cpp
-- Source/GameUtils/Public/Logging/AtlasLogMacros.h
-- Source/GameUtils/Public/Logging/AtlasScopedLog.h
-
-
-BUILD / TARGETS / MODULE DEPENDENCIES
-=====================================
-
-Targets
-- Source/Game.Target.cs
-  - Type = TargetType.Game
-  - DefaultBuildSettings = BuildSettingsVersion.V6
-  - IncludeOrderVersion = EngineIncludeOrderVersion.Unreal5_7
-  - ExtraModuleNames.Add("Game")
-- Source/GameEditor.Target.cs
-  - Type = TargetType.Editor
-  - DefaultBuildSettings = BuildSettingsVersion.V6
-  - IncludeOrderVersion = EngineIncludeOrderVersion.Unreal5_7
-  - ExtraModuleNames.Add("Game")
-
-Common module build rule pattern
-- PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs
-- PublicIncludePaths includes ModuleDirectory/Public
-- PrivateIncludePaths includes ModuleDirectory/Private
-
-Game module dependencies
-- Public:
-  - Core
-  - CoreUObject
-  - Engine
-  - GameActors
-  - GameCore
-  - GameUI
-  - GameUtils
-- Private: none
-
-GameActors module dependencies
-- Public:
-  - Core
-  - CoreUObject
-  - Engine
-  - InputCore
-  - EnhancedInput
-  - AIModule
-  - GameUtils
-- Private: none
-
-GameCore module dependencies
-- Public:
-  - Core
-  - CoreUObject
-  - Engine
-  - GameUtils
+- EngineAssociation: 5.7
+- Runtime modules: Game (LoadingPhase Default), GameActors, GameCore, GameUI, GameUtils
+- Enabled plugins:
+  - ModelingToolsEditorMode (editor only)
   - GameplayAbilities
-  - GameplayTags
-  - GameplayTasks
-- Private: none
-- The GAS adapter is why GameplayAbilities/GameplayTags/GameplayTasks are now part of GameCore.
-
-GameUI module dependencies
-- Public:
-  - Core
-  - CoreUObject
-  - Engine
-  - UMG
   - CommonUI
-  - GameUtils
-- Private:
-  - Slate
-  - SlateCore
+  - GameFeatures
+  - ModularGameplay
 
-GameUtils module dependencies
-- Public:
-  - Core
-  - CoreUObject
-- Private: none
+Targets (Source/Game.Target.cs, Source/GameEditor.Target.cs)
+- BuildSettingsVersion.V6, EngineIncludeOrderVersion.Unreal5_7, ExtraModuleNames: Game.
+
+Build command (no CLI script; UBT directly)
+- "<UE5_ROOT>\Engine\Binaries\DotNET\UnrealBuildTool\UnrealBuildTool.exe" GameEditor Win64 Development "D:\Projects\UnrealEngine\UE5GameTemplate\Game.uproject"
+
+
+MODULE ARCHITECTURE
+===================
+
+Dependency graph is strictly one-way; violations are rejected in review:
+
+  Game -> GameActors, GameCore, GameUI, GameUtils
+  GameActors -> GameUtils (+ GAS modules, EnhancedInput, InputCore, AIModule,
+                ModularGameplay, GameFeatures)
+  GameCore   -> GameUtils (+ GAS modules, DeveloperSettings;
+                private: UMG, Slate, SlateCore, Json)
+  GameUI     -> GameUtils (+ UMG, CommonUI, CommonInput, InputCore,
+                DeveloperSettings, GameFeatures; private: Slate, SlateCore)
+  GameUtils  -> no local deps
+
+GameActors/GameCore/GameUI must never depend on each other. When a design
+conflicts with the graph, the graph wins - bridge with soft object paths,
+delegates, or data assets. Existing bridge decisions:
+- UI configuration lives in UAtlasUIDeveloperSettings (GameUI), not in
+  GameCore's settings; GameCore stores only soft paths for UI assets.
+- GameCore's loading screen subsystem handles its widget generically as
+  UUserWidget via a soft class path.
+- AAtlasPostLoadTrigger lives in GameCore (not GameActors) because it exists
+  solely to call the transition subsystem.
+
+Module responsibilities
+- Game: thin host. UAtlasGameInstance bootstrap only. IMPLEMENT_PRIMARY_GAME_MODULE.
+- GameUtils: log categories (LogAtlas, LogAtlasActors, LogAtlasCore, LogAtlasUI,
+  LogAtlasUtils), ATLAS_LOG_* / ATLAS_CHECK / ATLAS_ENSURE / ATLAS_ENSURE_MSG /
+  ATLAS_LOG_DEBUG macros, FAtlasScopedLog. Nothing else.
+- GameCore: runtime orchestration + services (details below).
+- GameActors: GAS-ready actor foundation + movement/vehicles/mounts (below).
+- GameUI: Common UI layer stack + widgets + glyphs (below).
+
+Macro rule: export macro matches module (GAMECORE_API etc.). All logging goes
+through GameUtils macros; never raw UE_LOG in production code.
+Note: ATLAS_ENSURE_MSG expands to an if-statement - it cannot be used inside
+an expression/condition (ATLAS_ENSURE can).
 
 
 RUNTIME BOOTSTRAP
 =================
 
-Primary startup path
-1. Unreal loads the Game module.
-2. FGameModule::StartupModule logs "Game Started".
-3. Config sets UAtlasGameInstance as the game instance.
-4. UAtlasGameInstance::Init() runs.
-5. UAtlasGameInstance::Init() calls Super::Init().
-6. It logs "[GameInstance] Init".
-7. It resolves UAtlasGameInstanceSubsystem via GetSubsystem<UAtlasGameInstanceSubsystem>().
-8. It hard-checks that the subsystem exists.
+1. Engine loads modules; config sets /Script/Game.AtlasGameInstance.
+2. UAtlasGameInstance::Init() verifies UAtlasGameInstanceSubsystem exists.
+3. UAtlasGameInstance::OnStart() calls UAtlasGameFlowSubsystem::StartGameFlow():
+   - travels to UAtlasDeveloperSettings::MainMenuMap when set;
+   - auto-travel is SKIPPED in PIE (never hijacks the edited map);
+   - with no menu map it enters the MainMenu state in place.
 
-Game instance shutdown
-- UAtlasGameInstance::Shutdown() logs "[GameInstance] Shutdown".
-- It then calls Super::Shutdown().
+Core orchestrator (GameCore)
+- UAtlasGameInstanceSubsystem: owns pure C++ IAtlasSystem instances in
+  TMap<FName, TSharedPtr<IAtlasSystem>>; RegisterSystems() delegates to
+  FAtlasSystemsRegistry::Register() (currently FAtlasSaveSystem +
+  FAtlasLoadSystem); InitializeSystems() in registration order,
+  ShutdownSystems() in reverse. GetSystem<T>() resolves by
+  SupportsInterface(T::InterfaceName()).
+- Adding a system: interface in GameCore/Public/Systems/<Name>/IAtlas<Name>System.h
+  (extends IAtlasSystem, static InterfaceName()), implementation FAtlas<Name>System,
+  register in FAtlasSystemsRegistry::Register().
 
-Game module shutdown
-- FGameModule::ShutdownModule logs "Game Shutdown".
+Engine subsystems in GameCore (UGameInstanceSubsystem)
+- UAtlasGameFlowSubsystem: state machine Startup/MainMenu/Gameplay/Paused/
+  Transitioning; RequestGameplay/RequestReturnToMainMenu/RequestPause/Resume;
+  OnGameFlowStateChanged(Old, New). Pause is state-only (world pause is up to
+  listeners).
+- UAtlasLevelTransitionSubsystem: single authority for level travel. Lifecycle
+  Idle -> PreTravel -> Traveling -> PostLoad -> Idle with re-entrancy guard.
+  FAtlasLevelTransitionRequest: DestinationMap (soft), TransitionType,
+  TravelOptions, bShowLoadingScreen, bSaveCheckpointBeforeTravel,
+  LoadSlotOnPostLoad. Delegates OnPreTravel/OnPostLoad/OnTransitionFailed.
+  NotifyLevelLoaded() fired by PostLoadMapWithWorld automatically and by
+  AAtlasPostLoadTrigger placed in maps (idempotent). PerformTravel() is
+  virtual (OpenLevelBySoftObjectPtr by default) for future seamless travel.
+- UAtlasLoadingScreenSubsystem: viewport-level loading screen (Z-order 10000)
+  that survives travel by re-adding on PostLoadMapWithWorld; widget class from
+  UAtlasDeveloperSettings::LoadingScreenWidgetClass (soft class path, generic
+  UUserWidget); OnLoadingScreenShown/Hidden delegates fire even with no widget
+  configured.
 
-Important comments
-- Source/Game/Private/Game.cpp still contains commented-out manual module loading examples, including an obsolete "GameSystems" entry.
-- Do not use those commented examples as active architecture.
+Settings / asset manager / tags (GameCore)
+- UAtlasDeveloperSettings (Project Settings -> Game -> Atlas Framework;
+  [/Script/GameCore.AtlasDeveloperSettings] in DefaultGame.ini): StartupMap,
+  MainMenuMap, DefaultGameplayMap (soft world ptrs), DefaultPawnData /
+  LoadingScreenWidgetClass / ScreenRegistry as soft paths (cross-module),
+  loading fade durations, DefaultSaveSlotName, bEnableAutosave,
+  AutosaveIntervalSeconds, bSaveCheckpointOnTravel, bAutoActivateGameFeatures.
+- UAtlasAssetManager (AssetManagerClassName in DefaultEngine.ini): owns primary
+  asset type constants AtlasPawnData, AtlasAbilitySet, AtlasScreenDefinition,
+  AtlasInputConfig; logs init.
+- AtlasGameplayTags (GameCore/Public/Tags): native tags via
+  UE_DECLARE/DEFINE_GAMEPLAY_TAG. Namespaces: Atlas.GameFlow.*, Atlas.UI.Layer.*,
+  Atlas.Input.Native.*, Atlas.Input.Ability.*, Atlas.Save.Event.*.
+  Convention: Atlas.Category.Subcategory; feature plugins declare their own.
 
 
-CORE SYSTEM ARCHITECTURE
+GAS / ACTOR FOUNDATION (GameActors)
+===================================
+
+Actor hierarchy
+- AAtlasPawn (APawn) -> AAtlasVehiclePawn, AAtlasMountPawn
+- AAtlasCharacter (ACharacter - kept for CharacterMovement/animation)
+- AAtlasPlayerController, AAtlasAIController
+- AAtlasGameMode (AGameMode - match state), AAtlasGameState (AGameState)
+- AAtlasPlayerState (owns the player ASC)
+All expose empty Initialize*() virtuals as game-project hooks; all are Modular
+Gameplay receivers (AddGameFrameworkComponentReceiver in PreInitializeComponents,
+NAME_GameActorReady sent in BeginPlay, RemoveReceiver in EndPlay).
+
+ASC ownership
+- Player pawns: UAtlasAbilitySystemComponent lives on AAtlasPlayerState
+  (survives respawn; net update frequency raised to 100). Avatar assigned on
+  possession by the pawn extension.
+- AI pawns: pawn-owned ASC created by UAtlasAbilityExtensionComponent from
+  AAtlasAIController::OnPossess; torn down on unpossess.
+- Replication mode Mixed set in the ASC constructor.
+
+UAtlasAbilitySystemComponent additions
+- AbilityInputTagPressed/Released(FGameplayTag): tag-based activation via
+  spec dynamic source tags (ABILITYLIST_SCOPE_LOCK iteration).
+- GrantAbilitySet/RevokeAbilitySet(FAtlasAbilitySetHandle&): authority only;
+  grant order attribute sets -> effects -> abilities; OnAbilitiesGranted.
+
+Data assets
+- UAtlasAbilitySet: GrantedAbilities (class + level + InputTag),
+  GrantedAttributeSets, GrantedEffects. FAtlasAbilitySetHandle is C++-only.
+- UAtlasPawnData: PawnClass, AbilitySets, InputConfigs, CameraConfig.
+- UAtlasInputConfigData: MappingContext + Priority + AbilityBindings
+  (InputAction soft ptr -> Atlas.Input.* tag).
+- UAtlasCameraConfig: spring arm settings, FOV, blend hints.
+- UAtlasBaseAttributeSet: ATLAS_ATTRIBUTE_ACCESSORS macro, clamp pattern,
+  example replicated Level attribute. UAtlasBaseGameplayAbility:
+  InstancedPerActor, InputTag, avatar/controller/ASC helpers.
+
+Initialization flow (player)
+- Game mode resolves pawn class from DefaultPawnData when set.
+- PossessedBy/UnPossessed/OnRep_Controller/OnRep_PlayerState all route to
+  UAtlasPawnExtensionComponent::HandleControllerChanged(); OnRep_PlayerState is
+  the client-side init trigger (PlayerState may replicate after the controller).
+- InitializeAbilitySystem is idempotent; grants pawn data sets on authority;
+  fires OnAbilitySystemInitialized/Uninitialized (FSimpleMulticastDelegate).
+- SetupPlayerInputComponent (owning client) forwards to the controller's
+  UAtlasInputExtensionComponent::InitializeForPawn: applies mapping contexts,
+  binds ability actions on the pawn's EnhancedInputComponent
+  (Started -> pressed, Completed -> released). Bindings die with the pawn's
+  input component; contexts are removed in OnUnPossess.
+
+Movement / vehicles / mounts / camera (phase 11)
+- UAtlasMovementExtensionComponent: replicated EAtlasMovementMode
+  (None/Walking/Falling/Swimming/Flying/Custom/InVehicle/Mounted) with
+  rep-notify rebroadcast; auto-syncs with UCharacterMovementComponent via
+  MovementModeChangedDelegate; EnterVehicle/ExitVehicle and MountRider/Dismount
+  (authority only) save/restore the previous mode, disable/enable the pawn's
+  own movement component, attach/detach at sockets. RequestMovementModeChange
+  rejects the attachment modes.
+- AAtlasVehiclePawn: no physics shipped; GetVehicleMovementComponent() resolves
+  whatever the game adds; Seat_<N> socket convention; GetSeatAttachComponent
+  overridable. UAtlasVehicleExtensionComponent: TryEnterVehicle (seat -1 =
+  first free), ExitVehicle, seat bookkeeping with weak refs, optional
+  PassengerInputConfig/PassengerCameraConfig, C++/BP hooks + delegates.
+- AAtlasMountPawn + UAtlasMountExtensionComponent: single rider, RiderSocket,
+  CanBeRidden(), RiderInputConfig/RiderCameraConfig.
+- Input routing: the input extension listens to OnMovementModeChanged and
+  suppresses the pawn data default mapping contexts while InVehicle/Mounted
+  (contexts only - ability bindings stay bound, so resume never double-binds).
+- UAtlasCameraExtensionComponent (optional): applies UAtlasCameraConfig to the
+  owner's spring arm/camera; default from pawn data, vehicles/mounts
+  PushCameraConfig/ClearPushedCameraConfig around attachment.
+
+Feature actions in GameActors
+- UAtlasGameFeatureAction_AddAbilities: extension-handler based; covers live
+  and late-spawning pawns; defers grants until OnAbilitySystemInitialized when
+  the pawn is not possessed yet; revokes on deactivate.
+- UAtlasGameFeatureAction_AddInputConfig: applies configs to live and
+  late-spawning local AAtlasPlayerControllers.
+
+
+UI ARCHITECTURE (GameUI)
 ========================
 
-Base system interface
-- File: Source/GameCore/Public/Interfaces/IAtlasSystem.h
-- Type: pure C++ interface, not a UINTERFACE.
-- Required functions:
-  - Initialize(UAtlasGameInstanceSubsystem* Subsystem)
-  - Shutdown()
-  - GetSystemName() const
-  - SupportsInterface(FName InterfaceName) const
+UAtlasUISubsystem (UGameInstanceSubsystem)
+- Owns UAtlasRootWidget (lazy-created, re-added to viewport after travel).
+- PushScreen(FName, Context)/PopScreen/PopAllScreens/IsScreenActive/
+  GetActiveScreen; screens resolved by ID via UAtlasScreenRegistry
+  (UAtlasUIDeveloperSettings::ScreenRegistry). Definitions:
+  UAtlasScreenDefinition (WidgetClass soft, TargetLayer, RequestedInputMode,
+  bSingleInstance; primary asset type AtlasScreenDefinition).
+- RegisterScreen/UnregisterScreen: runtime registrations (used by feature
+  actions) take precedence over authored entries; unregister pops if active.
+- ShowHUD/HideHUD push/pop HUDScreenId (default "HUD"); GetActiveHUDWidget.
+- ShowModal(id, FAtlasModalPayload, FAtlasModalResultDelegate)/DismissModal:
+  modal must be a UAtlasModalWidget; result fires exactly once.
+- ShowNotification(FAtlasNotificationPayload): toast on Notification overlay,
+  auto-removed after duration.
+- ShowLoadingScreen/HideLoadingScreen: root-widget Loading layer (for travel
+  use the GameCore subsystem instead).
+- Input mode derived from the top-most active screen (highest layer, then
+  most recent); EAtlasInputMode Game/Menu/GameAndMenu/GamepadCursor applied to
+  the first local player controller; OnInputModeChanged.
+- Delegates: OnScreenPushed/OnScreenPopped(FName).
+
+UAtlasRootWidget layers (bottom to top)
+- GameLayer/MenuLayer/ModalLayer: UCommonActivatableWidgetStack.
+- NotificationLayer/LoadingLayer: UOverlay.
+- BindWidgetOptional: a Blueprint root may bind them; otherwise constructed
+  procedurally so the UI works with zero content assets.
+
+Widget bases
+- UAtlasActivatableWidget (UCommonActivatableWidget): InitializeWithContext,
+  RequestedInputMode, bDismissOnBack. UAtlasMenuWidget, UAtlasModalWidget
+  (Confirm/Cancel + payload), UAtlasHUDWidget (named element slots,
+  AddHUDElement/RemoveHUDElement for feature injection),
+  UAtlasNotificationWidget and UAtlasLoadingScreenWidget (plain UUserWidget -
+  must not require activation).
+
+Glyphs
+- UAtlasGlyphSubsystem (ULocalPlayerSubsystem) wraps Common Input device
+  detection -> EAtlasInputDevice (KeyboardMouse/Xbox/PlayStation/Generic);
+  OnInputDeviceChanged; GetGlyphForKey via UAtlasInputGlyphData
+  (key -> texture per device) from UAtlasUIDeveloperSettings.
+
+UAtlasUIDeveloperSettings (Project Settings -> Game -> Atlas UI)
+- RootWidgetClass, RootWidgetZOrder, ScreenRegistry, HUDScreenId,
+  LoadingScreenWidgetClass, NotificationWidgetClass, InputGlyphData,
+  bAutoDetectInputDevice, navigation options.
+
+Feature actions in GameUI
+- UAtlasGameFeatureAction_AddScreens: register/unregister runtime screens.
+- UAtlasGameFeatureAction_AddHUDElements: inject widgets into HUD slots,
+  re-adding when a HUD screen is pushed later.
+
+
+SAVE / LOAD ARCHITECTURE (GameCore)
+===================================
+
+Layering
+- IAtlasSaveSystem / IAtlasLoadSystem (interfaces)
+- FAtlasSaveSystem / FAtlasLoadSystem (TSharedFromThis implementations)
+- FAtlasSaveScheduler (priority queue Manual > Event > Autosave; event
+  debounce 2 s; timer autosave 300 s via FTSTicker)
+- FAtlasAutosaveManager (ring buffer Autosave_0..4; reserved index persisted
+  in AutosaveIndex.sav; critical-section guarded)
+- FAtlasBinaryWriter / FAtlasBinaryReader (versioned chunked binary; chunk
+  names Header/WorldSnapshot/ActorSnapshot/DataChunk shared as inline
+  constants in AtlasBinaryWriter.h)
+- FAtlasSaveCollector (game-thread world walk; captures IAtlasSavable actors
+  and components into FAtlasWorldSnapshot)
+- FAtlasSaveMigrationManager (registry of sequential vN->vN+1 world snapshot
+  migrations; invoked by the reader when the payload version is older;
+  missing step fails the load)
+- FAtlasSaveSlotManifest (JSON manifest Saved/SaveGames/SaveManifest.json,
+  updated after every successful save; AddSlot/RemoveSlot/GetAllSlots)
+- FAtlasFileStorage (temp-file + rename writes, 256 MiB cap, slot name
+  sanitization)
+
+Actor participation
+- UAtlasSavableComponent: stable FGuid ActorId (regenerated on duplication);
+  required for collection; load resolves actors by GUID and respawns missing
+  ones from the recorded class path.
+- IAtlasSavable: CaptureState/RestoreState with chunked
+  FAtlasSaveContext/FAtlasLoadContext (game thread).
+- Adapters: UAtlasGASSaveAdapter (attributes + active effects; approximate
+  effect duration restore, heuristic cooldown detection),
+  UAtlasInventorySaveAdapter (stub inventory items).
+
+Threading
+- Requests and collection on the game thread; serialization + file I/O async
+  (thread pool) with completion marshalled back via AsyncTask(GameThread).
+- bSaveInProgress / bLoadInProgress are std::atomic<bool>.
+
+Level transition integration
+- bSaveCheckpointBeforeTravel: event-priority save to "Checkpoint_Travel" in
+  the pre-travel phase (world state collected synchronously before travel).
+- LoadSlotOnPostLoad: RequestLoad of that slot right after post-load.
+
+Still-valid caveats (inherited from the original implementation)
+- FAtlasSaveGameSnapshot / UAtlasSaveGame key-value APIs exist but are NOT
+  integrated into the binary world snapshot path; LoadedSnapshot key/value
+  getters return nothing after a binary load. Unify or remove when asked.
+- Component chunks are keyed by component index + name; reordering/renaming
+  components between save and load breaks restore matching.
+- Load does not destroy world actors absent from the snapshot.
+- No save/load completion delegates exposed; no Blueprint-facing save/load
+  API (systems are C++ shared pointers behind the subsystem).
+- GAS adapter effect restore is approximate (fresh durations).
 
-Design rules documented in IAtlasSystem
-- Systems are owned by UAtlasGameInstanceSubsystem.
-- Systems initialize once per game session.
-- Systems are pure logic containers.
-- Systems should not directly depend on Actors.
-- Systems should not own gameplay objects.
-- Systems are controlled by subsystem lifecycle.
 
-Central subsystem
-- Class: UAtlasGameInstanceSubsystem
-- File: Source/GameCore/Public/Subsystems/AtlasGameInstanceSubsystem.h
-- Inherits: UGameInstanceSubsystem
-- Responsibilities:
-  - Own all runtime systems.
-  - Register systems.
-  - Initialize systems.
-  - Shutdown systems.
-  - Provide service-locator access to systems.
-
-Subsystem lifecycle
-- Initialize(FSubsystemCollectionBase&)
-  - Super::Initialize(Collection)
-  - log "AtlasGameInstanceSubsystem Initialize"
-  - RegisterSystems()
-  - InitializeSystems()
-- Deinitialize()
-  - log "AtlasGameInstanceSubsystem Deinitialize"
-  - ShutdownSystems()
-  - Super::Deinitialize()
-
-System registration
-- RegisterSystems() delegates to FAtlasSystemsRegistry::Register(this).
-- Current registered systems:
-  - FAtlasSaveSystem
-  - FAtlasLoadSystem
-
-System storage
-- TMap<FName, TSharedPtr<IAtlasSystem>> Systems
-- TArray<FName> SystemOrder
-
-Lifecycle ordering
-- Systems initialize in SystemOrder registration order.
-- Systems shut down in reverse SystemOrder.
-- Duplicate system names are rejected with a warning.
-
-System lookup
-- Template method: GetSystem<T>().
-- Iterates through Systems.
-- Calls Pair.Value->SupportsInterface(T::InterfaceName()).
-- Returns StaticCastSharedPtr<T>(Pair.Value) when supported.
-- Returns nullptr when missing.
-
-Current lookup caveat
-- Lookup is linear and fine for two systems.
-- If many systems are added, consider an interface-name map/cache.
-
-Systems registry
-- Class: FAtlasSystemsRegistry
-- File: Source/GameCore/Public/Systems/AtlasSystemsRegistry.h
-- Register() currently constructs:
-  - MakeShared<FAtlasSaveSystem>()
-  - MakeShared<FAtlasLoadSystem>()
-- Both are registered through UAtlasGameInstanceSubsystem::RegisterSystem().
-- Comments still refer to "GameSystems" and should be cleaned up later.
-
-
-SAVE / LOAD ARCHITECTURE
-========================
-
-Current save/load model
-- The current implementation uses binary world snapshots saved under Saved/SaveGames/.
-- Actors opt in by having UAtlasSavableComponent.
-- Optional state capture/restore is done by objects implementing IAtlasSavable through the UAtlasSavable UINTERFACE.
-- Save collection runs on the game thread.
-- Serialization and disk write run asynchronously on the thread pool.
-- Load disk read and deserialization run asynchronously on the thread pool.
-- Actor resolution/spawning and state restore run on the game thread.
-
-Two related data models exist
-- FAtlasSaveGameSnapshot:
-  - Metadata plus typed key/value maps.
-  - Still exposed through IAtlasSaveSystem/IAtlasLoadSystem.
-  - PendingSnapshot can receive SetIntValue/SetFloatValue/etc.
-  - BuildSnapshotForSave() populates metadata, but the current StartSaveRequest() path does not serialize this snapshot to disk.
-- FAtlasWorldSnapshot:
-  - Actual current persisted binary payload.
-  - Contains actor snapshots and serialized data chunks.
-  - Used by FAtlasSaveCollector, FAtlasBinaryWriter, FAtlasBinaryReader, FAtlasSaveSystem, and FAtlasLoadSystem.
-
-Important implementation caveat
-- The key/value FAtlasSaveGameSnapshot API and metadata API are not currently integrated into the binary world snapshot save file.
-- FAtlasLoadSystem::LoadedSnapshot is reset and provides TryGetIntValue/TryGetFloatValue/etc., but current binary load populates LoadedWorldSnapshot, not LoadedSnapshot.
-- Future implementation should either:
-  - integrate FAtlasSaveGameSnapshot into the binary format, or
-  - remove/replace the stale key/value snapshot API if world snapshots are the intended single model.
-
-
-SAVE SYSTEM
-===========
-
-Interface
-- File: Source/GameCore/Public/Systems/Save/IAtlasSaveSystem.h
-- Interface name: "IAtlasSaveSystem"
-- Extends IAtlasSystem.
-
-Public API
-- SaveGame()
-- RequestSave(const FString& SlotName)
-- RequestEventSave(const FString& SlotName)
-- RequestAutosave()
-- SaveGameToSlot(const FString& SlotName, int32 UserIndex = 0)
-- GetDefaultSlotName() const
-- DoesSaveExist(const FString& SlotName, int32 UserIndex = 0) const
-- ClearPendingSnapshot()
-- SetIntValue(FName Key, int32 Value)
-- SetFloatValue(FName Key, float Value)
-- SetStringValue(FName Key, const FString& Value)
-- SetVectorValue(FName Key, const FVector& Value)
-- SetRotatorValue(FName Key, const FRotator& Value)
-- SetTransformValue(FName Key, const FTransform& Value)
-- RemoveValue(FName Key)
-- GetPendingSnapshot(FAtlasSaveGameSnapshot& OutSnapshot) const
-
-Concrete type
-- Class: FAtlasSaveSystem
-- File: Source/GameCore/Public/Systems/Save/AtlasSaveSystem.h
-- Implements:
-  - IAtlasSaveSystem
-  - TSharedFromThis<FAtlasSaveSystem>
-- System name: "SaveSystem"
-- SupportsInterface returns true only for IAtlasSaveSystem::InterfaceName().
-
-State
-- UAtlasGameInstanceSubsystem* OwningSubsystem
-- FAtlasSaveGameSnapshot PendingSnapshot
-- FAtlasSaveScheduler SaveScheduler
-- bool bSaveInProgress
-- bool bShuttingDown
-
-Initialize()
-- Stores OwningSubsystem.
-- Resets PendingSnapshot.
-- Clears in-progress/shutdown flags.
-- Initializes FAtlasSaveScheduler with default config:
-  - AutosaveIntervalSeconds = 300.0f
-  - EventDebounceSeconds = 2.0f
-  - bEnableTimerAutosave = true
-- Scheduler callback calls ProcessNextSaveRequest().
-- Logs "SaveSystem initialized".
-
-Shutdown()
-- Sets bShuttingDown.
-- Shuts down scheduler.
-- Resets PendingSnapshot.
-- Clears OwningSubsystem.
-- Logs "SaveSystem shutdown".
-
-Default slot
-- GetDefaultSlotName() returns:
-  - "<ProjectName>_MainProfile" if FApp::GetProjectName() is non-empty.
-  - "Atlas_MainProfile" otherwise.
-- UserIndex is ignored for Atlas binary storage.
-- Non-zero UserIndex logs warnings in SaveGameToSlot() and DoesSaveExist().
-
-Manual save flow
-1. SaveGame() calls RequestSave(GetDefaultSlotName()).
-2. RequestSave() queues a manual save in FAtlasSaveScheduler.
-3. Scheduler calls ProcessNextSaveRequest().
-4. ProcessNextSaveRequest() exits if shutting down, already saving, or queue empty.
-5. It pops the highest-priority request.
-6. StartSaveRequest() resolves UWorld from OwningSubsystem->GetGameInstance()->GetWorld().
-7. It collects an FAtlasWorldSnapshot on the game thread with FAtlasSaveCollector::CollectWorld(World).
-8. It async serializes with FAtlasBinaryWriter::Serialize(WorldSnapshot, BinaryData).
-9. It async writes with FAtlasFileStorage::SaveToSlot(Request.SlotName, BinaryData).
-10. Completion returns to game thread and calls HandleSaveCompleted().
-11. HandleSaveCompleted() logs success/failure, clears bSaveInProgress, and processes the next queued request.
-
-Save failure behavior
-- If world is null, StartSaveRequest logs an error and calls ProcessNextSaveRequest().
-- Note: in the current code, bSaveInProgress is set after the null-world check, so this path does not leave bSaveInProgress stuck.
-- Serialization/write failures are logged in HandleSaveCompleted().
-
-
-SAVE SCHEDULER
-==============
-
-Class
-- FAtlasSaveScheduler
-- Files:
-  - Source/GameCore/Public/Systems/Save/AtlasSaveScheduler.h
-  - Source/GameCore/Private/Systems/Save/AtlasSaveScheduler.cpp
-
-Responsibilities
-- Timer-based autosaves.
-- Event-driven saves with debounce.
-- Manual/event/autosave priority queue.
-- Queueing save requests without starting multiple saves directly.
-
-Priority enum
-- EAtlasSavePriority::Autosave = 0
-- EAtlasSavePriority::Event = 1
-- EAtlasSavePriority::Manual = 2
-
-Request struct
-- FAtlasScheduledSaveRequest:
-  - FString SlotName
-  - EAtlasSavePriority Priority
-  - int32 AutosaveIndex
-  - bool bAutosave
-  - bool bEventSave
-
-Default config
-- AutosaveIntervalSeconds = 300.0f
-- EventDebounceSeconds = 2.0f
-- bEnableTimerAutosave = true
-
-Ticker
-- Uses FTSTicker::GetCoreTicker().
-- Tick accumulates DeltaTime.
-- When accumulator exceeds AutosaveIntervalSeconds, RequestAutosave() is called and accumulator resets.
-
-Event save debounce
-- Rejects event saves if:
-  - last accepted event save was less than EventDebounceSeconds ago, or
-  - an event save is already pending.
-
-Priority selection
-- PopNextRequest() scans PendingRequests and returns the request with the highest numeric priority.
-- Manual saves outrank event saves, which outrank autosaves.
-
-
-AUTOSAVE MANAGER
-================
-
-Class
-- FAtlasAutosaveManager
-- Files:
-  - Source/GameCore/Public/Systems/Save/AtlasAutosaveManager.h
-  - Source/GameCore/Private/Systems/Save/AtlasAutosaveManager.cpp
-
-Responsibilities
-- Thread-safe autosave ring slot reservation.
-- Persistent tracking of the most recently reserved autosave index.
-
-Slot layout
-- Autosave_0
-- Autosave_1
-- Autosave_2
-- Autosave_3
-- Autosave_4
-
-Constants
-- AutosaveSlotCount = 5
-- Index slot name = "AutosaveIndex"
-- Autosave slot prefix = "Autosave"
-
-Storage
-- Saves the reserved autosave index through FAtlasFileStorage as Saved/SaveGames/AutosaveIndex.sav.
-- Uses FMemoryWriter/FMemoryReader to store an int32.
-- Uses FCriticalSection and FScopeLock.
-
-Reservation flow
-1. Lock critical section.
-2. Load current reserved index, or use INDEX_NONE if missing/corrupt.
-3. Compute next index with ring wrap.
-4. Store next index before save starts.
-5. Return "Autosave_<Index>" and the index.
-
-
-SAVE COLLECTOR
-==============
-
-Class
-- FAtlasSaveCollector
-- Files:
-  - Source/GameCore/Public/Systems/Save/AtlasSaveCollector.h
-  - Source/GameCore/Private/Systems/Save/AtlasSaveCollector.cpp
-
-Responsibilities
-- Build an in-memory FAtlasWorldSnapshot from opt-in actors.
-- Must run on the game thread.
-- Does not write to disk.
-
-Collection rules
-- Iterates actors with TActorIterator<AActor>.
-- Actor must be valid.
-- Actor must have UAtlasSavableComponent.
-- Savable component must have a valid ActorId.
-- Snapshot stores:
-  - ActorId
-  - Actor class path
-  - Actor transform
-  - Data chunks captured from actor/components implementing UAtlasSavable.
-
-Actor state capture
-- If actor class implements UAtlasSavable, captures an "Actor" chunk.
-- It iterates all actor components.
-- If a component class implements UAtlasSavable, captures a component chunk.
-
-Chunk naming
-- Actor chunk:
-  - "Actor"
-- Component chunk:
-  - "Component.<ComponentIndex>.<ComponentName>"
-
-Capture method
-- Casts UObject to IAtlasSavable.
-- Uses FMemoryWriter and FAtlasSaveContext.
-- Calls SaveContext.BeginChunk(ChunkName).
-- Calls SavableObject->CaptureState(SaveContext).
-- Calls SaveContext.EndChunk().
-- Adds the resulting byte array as FAtlasDataChunk on the actor snapshot.
-
-Important caveat
-- Component restore depends on matching component index and component name.
-- Reordering components or renaming components between save and load can break restore matching.
-
-
-LOAD SYSTEM
-===========
-
-Interface
-- File: Source/GameCore/Public/Systems/Load/IAtlasLoadSystem.h
-- Interface name: "IAtlasLoadSystem"
-- Extends IAtlasSystem.
-
-Public API
-- LoadGame()
-- RequestLoad(const FString& SlotName)
-- LoadGameFromSlot(const FString& SlotName, int32 UserIndex = 0)
-- GetDefaultSlotName() const
-- DoesSaveExist(const FString& SlotName, int32 UserIndex = 0) const
-- ClearLoadedSnapshot()
-- GetLoadedMetadata(FAtlasSaveGameMetadata& OutMetadata) const
-- GetLoadedSnapshot(FAtlasSaveGameSnapshot& OutSnapshot) const
-- TryGetIntValue(FName Key, int32& OutValue) const
-- TryGetFloatValue(FName Key, float& OutValue) const
-- TryGetStringValue(FName Key, FString& OutValue) const
-- TryGetVectorValue(FName Key, FVector& OutValue) const
-- TryGetRotatorValue(FName Key, FRotator& OutValue) const
-- TryGetTransformValue(FName Key, FTransform& OutValue) const
-
-Concrete type
-- Class: FAtlasLoadSystem
-- File: Source/GameCore/Public/Systems/Load/AtlasLoadSystem.h
-- Implements:
-  - IAtlasLoadSystem
-  - TSharedFromThis<FAtlasLoadSystem>
-- System name: "LoadSystem"
-- SupportsInterface returns true only for IAtlasLoadSystem::InterfaceName().
-
-State
-- UAtlasGameInstanceSubsystem* OwningSubsystem
-- FAtlasSaveGameSnapshot LoadedSnapshot
-- FAtlasWorldSnapshot LoadedWorldSnapshot
-- bool bLoadInProgress
-- bool bShuttingDown
-
-Initialize()
-- Stores OwningSubsystem.
-- Resets LoadedSnapshot and LoadedWorldSnapshot.
-- Clears in-progress/shutdown flags.
-- Logs "LoadSystem initialized".
-
-Shutdown()
-- Sets bShuttingDown.
-- Resets loaded snapshots.
-- Clears OwningSubsystem.
-- Logs "LoadSystem shutdown".
-
-Default slot
-- Same naming as save:
-  - "<ProjectName>_MainProfile" or "Atlas_MainProfile".
-- UserIndex is ignored for Atlas binary storage.
-
-Load request flow
-1. LoadGame() calls RequestLoad(GetDefaultSlotName()).
-2. RequestLoad() checks game thread, shutdown, bLoadInProgress, and non-empty slot.
-3. It sets bLoadInProgress and logs start.
-4. It async loads bytes with FAtlasFileStorage::LoadFromSlot().
-5. It async deserializes with FAtlasBinaryReader::Deserialize().
-6. Completion returns to game thread and calls HandleSnapshotLoaded().
-7. HandleSnapshotLoaded() clears bLoadInProgress.
-8. If successful and not shutting down, stores LoadedWorldSnapshot.
-9. Calls ApplyWorldSnapshot().
-
-Restore flow
-- ApplyWorldSnapshot():
-  - Resolves UWorld from game instance.
-  - Phase 1: ResolveActorsForSnapshot().
-  - Phase 2: RestoreSnapshotState().
-
-ResolveActorsForSnapshot()
-- For each actor snapshot:
-  - Skip invalid ActorId.
-  - Try FindActorById() by scanning actors for UAtlasSavableComponent with matching ActorId.
-  - If missing, SpawnActorFromSnapshot().
-  - Ensure the resolved actor has UAtlasSavableComponent with the snapshot ActorId.
-  - Set actor transform from snapshot.
-  - Store actor in ActorsById map.
-
-SpawnActorFromSnapshot()
-- Loads actor UClass from ActorSnapshot.ClassPath using LoadObject<UClass>().
-- Verifies class is an AActor subclass.
-- Spawns with AlwaysSpawn collision handling.
-- Adds/updates UAtlasSavableComponent with the saved ActorId.
-
-RestoreSnapshotState()
-- For each actor snapshot:
-  - Finds resolved actor by ActorId.
-  - RestoreActorState().
-  - RestoreComponentState().
-
-RestoreActorState()
-- Requires actor class to implement UAtlasSavable.
-- Looks for "Actor" chunk.
-- Calls RestoreSavableObject().
-
-RestoreComponentState()
-- Iterates current actor components by index.
-- Requires component class to implement UAtlasSavable.
-- Builds "Component.<Index>.<Name>" chunk name.
-- If chunk missing, logs warning.
-- Calls RestoreSavableObject().
-
-RestoreSavableObject()
-- Casts UObject to IAtlasSavable.
-- Uses FMemoryReader and FAtlasLoadContext.
-- Begins expected chunk.
-- Calls SavableObject->RestoreState(LoadContext).
-- Ends chunk.
-
-Load caveats
-- It does not unload or destroy actors that exist in the current world but are absent from the snapshot.
-- It can spawn actors whose class path exists in the save but is missing in the current map.
-- Component matching is fragile because it uses component index and name.
-- Current code logs but does not expose completion delegates/events.
-- Only one load can run at a time.
-
-
-SAVABLE CONTRACT
-================
-
-UInterface
-- File: Source/GameCore/Public/Systems/Savable/AtlasSavable.h
-- UAtlasSavable is a UINTERFACE.
-- IAtlasSavable declares:
-  - CaptureState(FAtlasSaveContext& Context)
-  - RestoreState(const FAtlasLoadContext& Context)
-
-Usage
-- Implement on actors/components that should serialize custom state.
-- Actor must also have UAtlasSavableComponent to be collected.
-- Components implementing IAtlasSavable are captured/restored only when their owning actor is collected.
-
-Savable component
-- Class: UAtlasSavableComponent
-- Files:
-  - Source/GameCore/Public/Systems/Savable/AtlasSavableComponent.h
-  - Source/GameCore/Private/Systems/Savable/AtlasSavableComponent.cpp
-- Inherits UActorComponent.
-- BlueprintSpawnableComponent under ClassGroup Atlas.
-- Tick disabled.
-- Auto activate true.
-
-Actor ID behavior
-- Stores FGuid ActorId with:
-  - UPROPERTY(VisibleInstanceOnly, SaveGame, Category = "Savable")
-- OnRegister() calls EnsureActorId().
-- PostLoad() calls EnsureActorId().
-- PostDuplicate() generates a new ActorId for non-template duplicates.
-- EnsureActorId() does nothing for templates or already valid IDs.
-- FindOnActor() returns Actor->FindComponentByClass<UAtlasSavableComponent>().
-
-Important usage rule
-- Add UAtlasSavableComponent to any actor that should persist.
-- Ensure actors/components implementing IAtlasSavable serialize stable data and tolerate version changes.
-
-
-SAVE/LOAD CONTEXTS
-==================
-
-File
-- Source/GameCore/Public/Systems/Savable/AtlasSavableTypes.h
-- Source/GameCore/Private/Systems/Savable/AtlasSavableTypes.cpp
-
-FAtlasSaveContext
-- Wraps FArchive while saving.
-- Requires Archive->IsSaving().
-- Supports:
-  - BeginChunk(FName ChunkId)
-  - EndChunk()
-  - GetArchive()
-  - IsSaving()
-  - IsInChunk()
-  - GetCurrentChunkId()
-  - Serialize<TValue>(TValue& Value)
-  - SerializeBytes(void* Data, int64 NumBytes)
-- Chunk format:
-  - FName ChunkId
-  - int64 ChunkSizeBytes
-  - payload
-- EndChunk seeks back and writes chunk size.
-
-FAtlasLoadContext
-- Wraps FArchive while loading.
-- Requires Archive->IsLoading().
-- Supports:
-  - BeginChunk(FName ExpectedChunkId = NAME_None)
-  - EndChunk()
-  - GetArchive()
-  - IsLoading()
-  - IsInChunk()
-  - HasMoreDataInChunk()
-  - GetCurrentChunkId()
-  - Serialize<TValue>(TValue& Value)
-  - SerializeBytes(void* Data, int64 NumBytes)
-- BeginChunk validates expected chunk id when supplied.
-- EndChunk seeks to the chunk end if not all payload bytes were consumed.
-
-
-WORLD SNAPSHOT TYPES
+GAME FEATURE PLUGINS
 ====================
 
-File
-- Source/GameCore/Public/Systems/WorldState/AtlasWorldSnapshotTypes.h
-- Source/GameCore/Private/Systems/WorldState/AtlasWorldSnapshotTypes.cpp
-
-FAtlasDataChunk
-- USTRUCT(BlueprintType)
-- Fields:
-  - FName Name
-  - TArray<uint8> Data
-- IsValid() returns true when Name is not None.
-
-FAtlasActorSnapshot
-- USTRUCT(BlueprintType)
-- Fields:
-  - FGuid ActorId
-  - FString ClassPath
-  - FTransform Transform
-  - TArray<FAtlasDataChunk> Chunks
-- Methods:
-  - AddChunk(FName)
-  - AddChunk(FName, const TArray<uint8>&)
-  - AddChunk(FName, TArray<uint8>&&)
-  - FindChunk(FName)
-  - RemoveChunk(FName)
-  - ResetChunks()
-  - HasValidActorId()
-- AddActor/AddChunk methods overwrite/reset existing entries with matching IDs/names.
-
-FAtlasWorldSnapshot
-- USTRUCT(BlueprintType)
-- Fields:
-  - TArray<FAtlasActorSnapshot> Actors
-- Methods:
-  - Reset()
-  - IsEmpty()
-  - AddActor(FGuid, FString ClassPath, FTransform)
-  - FindActor(FGuid)
-  - RemoveActor(FGuid)
-
-
-BINARY SERIALIZATION
-====================
-
-Save header
-- File: Source/GameCore/Public/Systems/Serialization/AtlasSaveHeader.h
-- Used by binary reader/writer.
-- Contains version and timestamp.
-- FAtlasBinaryWriter::CurrentVersion is used as the supported version reference.
-
-Binary writer
-- Class: FAtlasBinaryWriter
-- Files:
-  - Source/GameCore/Public/Systems/Serialization/AtlasBinaryWriter.h
-  - Source/GameCore/Private/Systems/Serialization/AtlasBinaryWriter.cpp
-- Serializes FAtlasWorldSnapshot into TArray<uint8>.
-- CurrentVersion is set in the writer header.
-- Header timestamp is FDateTime::UtcNow().
-
-Top-level binary chunks
-- "Header"
-- "WorldSnapshot"
-- "ActorSnapshot"
-- "DataChunk"
-
-Writer chunk format
-- FName ChunkName
-- int64 ChunkSizeBytes
-- payload
-
-Header payload
-- int32 Version
-- int64 TimestampTicks
-
-WorldSnapshot payload
-- int32 ActorCount
-- repeated ActorSnapshot chunks
-
-ActorSnapshot payload
-- FGuid ActorId
-- FString ClassPath
-- FTransform Transform
-- int32 DataChunkCount
-- repeated DataChunk chunks
-
-DataChunk payload
-- FName ChunkName
-- int32 DataSize
-- raw bytes
-
-Binary reader
-- Class: FAtlasBinaryReader
-- Files:
-  - Source/GameCore/Public/Systems/Serialization/AtlasBinaryReader.h
-  - Source/GameCore/Private/Systems/Serialization/AtlasBinaryReader.cpp
-- Deserializes TArray<uint8> into FAtlasWorldSnapshot.
-- Validates:
-  - input not empty
-  - chunk headers valid
-  - expected chunk names
-  - non-negative chunk/data/actor counts
-  - chunk sizes within input range
-  - supported header version
-  - archive not in error/critical error state
-
-Important caveat
-- Binary format is custom and versioned only at the top-level header.
-- Individual adapter payloads also write local version ints, but there is no central migration framework yet.
-
-
-FILE STORAGE
-============
-
-Class
-- FAtlasFileStorage
-- Files:
-  - Source/GameCore/Public/Systems/Storage/AtlasFileStorage.h
-  - Source/GameCore/Private/Systems/Storage/AtlasFileStorage.cpp
-
-Responsibilities
-- Save raw binary data to Saved/SaveGames/.
-- Load raw binary data from Saved/SaveGames/.
-- Delete/check slots.
-- Keep disk I/O separate from serialization.
-
-Extensions
-- SaveExtension = ".sav"
-- TempExtension = ".tmp"
-
-Paths
-- Save directory:
-  - FPaths::ProjectSavedDir() / "SaveGames"
-- Slot path:
-  - Saved/SaveGames/<SanitizedSlotName>.sav
-- Temp path:
-  - Saved/SaveGames/<SanitizedSlotName>.tmp
-
-Save behavior
-- Rejects invalid/empty slot names.
-- Rejects empty data.
-- Ensures save directory exists.
-- Writes to temp file first.
-- Verifies temp file size matches data length.
-- Deletes old slot file.
-- Moves temp file to final slot file.
-- Logs success/failure.
-
-Load behavior
-- Rejects invalid slot names.
-- Requires file to exist.
-- Rejects file sizes <= 0 or > 256 MiB.
-- Loads file to array.
-- Verifies loaded byte count equals file size.
-- Logs success/failure.
-
-Slot sanitization
-- Trims whitespace.
-- Replaces invalid filesystem chars with underscores.
-- Replaces "/" and "\" with "_".
-- Replaces ".." with "_".
-
-
-SAVE GAME UOBJECT TYPES
-=======================
-
-UAtlasSaveGame
-- File: Source/GameCore/Public/SaveGame/AtlasSaveGame.h
-- Inherits USaveGame.
-- Stores private UPROPERTY FAtlasSaveGameSnapshot Snapshot.
-- Methods:
-  - SetSnapshot(const FAtlasSaveGameSnapshot&)
-  - GetSnapshot() const
-
-Current caveat
-- UAtlasSaveGame is not used by the current FAtlasSaveSystem binary file flow.
-- It appears to be a previous or parallel save-game API.
-
-FAtlasSaveGameMetadata
-- File: Source/GameCore/Public/SaveGame/AtlasSaveGameTypes.h
-- USTRUCT(BlueprintType)
-- Fields:
-  - int32 DataVersion = 1
-  - FString SlotName
-  - int32 UserIndex = 0
-  - FString SaveId
-  - FString SavedAtUtc
-  - FString BuildVersion
-  - FString MapName
-- IsValid() returns true when SlotName is not empty.
-
-FAtlasSaveGameSnapshot
-- USTRUCT(BlueprintType)
-- Fields:
-  - FAtlasSaveGameMetadata Metadata
-  - TMap<FName, int32> IntValues
-  - TMap<FName, float> FloatValues
-  - TMap<FName, FString> StringValues
-  - TMap<FName, FVector> VectorValues
-  - TMap<FName, FRotator> RotatorValues
-  - TMap<FName, FTransform> TransformValues
-- Reset() clears all fields.
-- IsEmpty() checks typed value maps only, not metadata.
-
-
-SAVE ADAPTERS
-=============
-
-Inventory adapter
-- Class: UAtlasInventorySaveAdapter
-- Files:
-  - Source/GameCore/Public/Systems/Adapters/AtlasInventorySaveAdapter.h
-  - Source/GameCore/Private/Systems/Adapters/AtlasInventorySaveAdapter.cpp
-- Inherits UActorComponent.
-- Implements IAtlasSavable.
-- BlueprintSpawnableComponent under ClassGroup Atlas.
-- Tick disabled.
-- Auto activate true.
-
-FAtlasInventoryItemSaveData
-- Fields:
-  - FName ItemId
-  - FString ItemClassPath
-  - int32 Quantity = 1
-  - TMap<FName, FString> CustomData
-- IsValid() requires non-None ItemId and Quantity > 0.
-
-Inventory adapter state
-- UPROPERTY(EditAnywhere, Category = "Inventory")
-  - TArray<FAtlasInventoryItemSaveData> Items
-
-Inventory public API
-- GetItems() const
-- GetMutableItems()
-- SetItems()
-- ClearItems()
-
-Inventory serialization
-- Local DataVersion = 1.
-- Writes:
-  - Version
-  - ItemCount
-  - each item:
-    - ItemId
-    - ItemClassPath
-    - Quantity
-    - CustomData
-- Restore rejects archive errors, non-positive version, or negative item count.
-- Invalid items are skipped on restore.
-
-GAS adapter
-- Class: UAtlasGASSaveAdapter
-- Files:
-  - Source/GameCore/Public/Systems/Adapters/AtlasGASSaveAdapter.h
-  - Source/GameCore/Private/Systems/Adapters/AtlasGASSaveAdapter.cpp
-- Inherits UActorComponent.
-- Implements IAtlasSavable.
-- BlueprintSpawnableComponent under ClassGroup Atlas.
-- Tick disabled.
-- Auto activate true.
-- Depends on GameplayAbilities and GameplayTags.
-
-GAS captured attribute data
-- FAtlasGASAttributeSaveData:
-  - FString AttributeSetClassPath
-  - FString AttributeName
-  - float BaseValue
-  - float CurrentValue
-
-GAS captured effect data
-- FAtlasGASEffectSaveData:
-  - FString EffectClassPath
-  - float Level
-  - int32 StackCount
-  - float Duration
-  - float TimeRemaining
-  - FGameplayTagContainer AssetTags
-  - FGameplayTagContainer GrantedTags
-  - bool bLikelyCooldown
-
-GAS adapter behavior
-- Resolves UAbilitySystemComponent by:
-  - IAbilitySystemInterface on owner, then
-  - FindComponentByClass<UAbilitySystemComponent>().
-- Capture:
-  - captures spawned AttributeSets and gameplay attributes.
-  - captures active gameplay effects.
-  - writes version, attribute count, attributes, effect count, effects.
-- Restore:
-  - resolves AbilitySystemComponent.
-  - loads saved attributes/effects.
-  - restores matching attributes by class path and attribute name.
-  - loads GameplayEffect class by path.
-  - creates outgoing spec and applies to self.
-  - stack count is restored.
-  - remaining duration is logged but not precisely restored; effects are reapplied with fresh duration.
-
-GAS caveats
-- Active effect reapplication is approximate.
-- Cooldown detection is heuristic: tag string contains "Cooldown".
-- It does not currently reconstruct exact elapsed time or all possible GameplayEffect runtime state.
-- It may need project-specific policy before being used for production saves.
-
-
-GAMEPLAY FRAMEWORK CLASSES
-==========================
-
-Module
-- GameActors
-
-AAtlasCharacter
-- Inherits ACharacter.
-- Constructor enables PrimaryActorTick.bCanEverTick = true.
-- BeginPlay() calls InitializeCharacter().
-- InitializeCharacter() is empty.
-
-AAtlasPawn
-- Inherits APawn.
-- Constructor enables PrimaryActorTick.bCanEverTick = true.
-- BeginPlay() calls InitializePawn().
-- InitializePawn() is empty.
-
-AAtlasPlayerController
-- Inherits APlayerController.
-- BeginPlay() calls InitializeController().
-- SetupInputComponent() calls Super then InitializeInput().
-- InitializeController() is empty.
-- InitializeInput() is empty.
-
-AAtlasAIController
-- Inherits AAIController.
-- BeginPlay() calls InitializeAI().
-- InitializeAI() is empty.
-
-AAtlasGameMode
-- Inherits AGameModeBase.
-- StartPlay() calls InitializeGameMode().
-- InitializeGameMode() is empty.
-
-AAtlasGameState
-- Inherits AGameStateBase.
-- BeginPlay() calls InitializeGameState().
-- InitializeGameState() is empty.
-
-AAtlasPlayerState
-- Inherits APlayerState.
-- BeginPlay() calls InitializePlayerState().
-- InitializePlayerState() is empty.
-
-Important gameplay caveats
-- No GameMode default classes are configured in DefaultEngine.ini.
-- No custom pawn/controller possession flow is configured.
-- Enhanced Input module is linked, but no input actions or mapping contexts exist in source/content.
-- The current classes are extension points only.
-
-
-UI ARCHITECTURE
-===============
-
-Module
-- GameUI
-
-Subsystem
-- Class: UAtlasUISubsystem
-- Files:
-  - Source/GameUI/Public/Subsystems/AtlasUISubsystem.h
-  - Source/GameUI/Private/Subsystems/AtlasUISubsystem.cpp
-- Inherits UGameInstanceSubsystem.
-
-Lifecycle
-- Initialize() calls Super and logs "UISubsystem initialized".
-- Deinitialize() logs "UISubsystem shutdown" then calls Super.
-
-Public API
-- OpenScreen(FName ScreenId)
-- CloseScreen()
-
-Current behavior
-- OpenScreen logs the ScreenId.
-- CloseScreen logs the request.
-
-UI caveats
-- CommonUI and UMG are linked.
-- There is no screen registry.
-- There is no widget stack.
-- There are no widget classes or widget Blueprints.
-- There is no input mode/cursor/focus management.
-- There are no UI assets checked in.
-
-
-LOGGING / UTILS
-===============
-
-Module
-- GameUtils
-
-Log categories
-- LogAtlas
-- LogAtlasActors
-- LogAtlasCore
-- LogAtlasUI
-- LogAtlasUtils
-
-Defined in
-- Source/GameUtils/Public/Logging/AtlasLogChannels.h
-- Source/GameUtils/Private/Logging/AtlasLogChannels.cpp
-
-Logging macros
-- File: Source/GameUtils/Public/Logging/AtlasLogMacros.h
-- ATLAS_LOG
-  - generic LogAtlas
-- ATLAS_LOG_ACTORS
-  - prefixes "[Actors]"
-- ATLAS_LOG_CORE
-  - prefixes "[Core]"
-- ATLAS_LOG_UI
-  - prefixes "[UI]"
-- ATLAS_LOG_UTILS
-  - prefixes "[Utils]"
-- ATLAS_LOG_DEBUG
-  - compiled out in Shipping builds.
-
-Assertion macros
-- ATLAS_CHECK(Expr)
-  - wraps check(Expr)
-- ATLAS_ENSURE(Expr)
-  - wraps ensure(Expr)
-- ATLAS_ENSURE_MSG(Expr, Format, ...)
-  - ensure plus LogAtlas error message.
-
-Scoped logging
-- File: Source/GameUtils/Public/Logging/AtlasScopedLog.h
-- FAtlasScopedLog logs "[Scope Begin]" in constructor and "[Scope End]" in destructor.
-- It is a stack RAII helper.
-- It is not currently used in the inspected runtime path.
+- Plugins/GameFeatures/GameFeature_SampleCharacter and GameFeature_SampleUI:
+  content-only scaffolding ([TEMPLATE EXAMPLE], BuiltInInitialFeatureState
+  Registered, ExplicitlyLoaded). Their READMEs list the editor assets to
+  author (GameFeatureData, ability set, input assets, pawn data, menu widget,
+  screen definition). Content/ folders are empty until authored in editor.
+- Rules: feature plugins depend on source modules, never the reverse, never
+  on each other. Feature tags follow Atlas.Feature.*.
+- Engine default GameFeatures policy handles activation;
+  bAutoActivateGameFeatures is a settings-level toggle only (no custom policy).
 
 
 CONFIGURATION SNAPSHOT
 ======================
 
 Config/DefaultEngine.ini
-
-Game maps/settings
-- GameDefaultMap=/Engine/Maps/Templates/OpenWorld
+- GameDefaultMap=/Engine/Maps/Templates/OpenWorld (replace when project maps exist)
 - GameInstanceClass=/Script/Game.AtlasGameInstance
-
-Renderer settings
-- r.AllowStaticLighting=False
-- r.GenerateMeshDistanceFields=True
-- r.DynamicGlobalIlluminationMethod=1
-- r.ReflectionMethod=1
-- r.SkinCache.CompileShaders=True
-- r.RayTracing=True
-- r.RayTracing.RayTracingProxies.ProjectEnabled=True
-- r.Substrate=True
-- r.Substrate.ProjectGBufferFormat=0
-- r.Shadow.Virtual.Enable=1
-- r.DefaultFeature.AutoExposure.ExtendDefaultLuminanceRange=True
-- r.DefaultFeature.LocalExposure.HighlightContrastScale=0.8
-- r.DefaultFeature.LocalExposure.ShadowContrastScale=0.8
-
-Windows target settings
-- DefaultGraphicsRHI=DefaultGraphicsRHI_DX12 appears twice.
-- D3D12 targeted shader format is SM6.
-- D3D11 targeted shader format is SM5.
-- Compiler=Default.
-- Audio sample rate and audio settings are template/default-style values.
-
-Linux target settings
-- TargetedRHIs changed from SF_VULKAN_SM5 to SF_VULKAN_SM6.
-
-Mac target settings
-- TargetedRHIs changed from SF_METAL_SM5 to SF_METAL_SM6.
-
-Hardware targeting
-- TargetedHardwareClass=Desktop
-- DefaultGraphicsPerformance=Maximum
-
-World partition editor
-- CommandletClass=/Script/UnrealEd.WorldPartitionConvertCommandlet
-
-UI settings
-- bAuthorizeAutomaticWidgetVariableCreation=False
-- FontDPIPreset=Standard
-- FontDPI=72
-
-Redirects
-- TP_Blank redirected to /Script/Game.
-
-Android File Server settings
-- Present from template/editor setup.
-- bEnablePlugin=True
-- ConnectionType=USBOnly
-- bIncludeInShipping=False
+- AssetManagerClassName=/Script/GameCore.AtlasAssetManager
+- Renderer: DX12/SM6, Lumen, ray tracing, VSM, Substrate (editor/dev only;
+  no shipping config yet). Duplicate DefaultGraphicsRHI line and the Android
+  File Server block were removed in phase 0.
 
 Config/DefaultGame.ini
-- CommonUI.CommonUISettings:
-  - CommonButtonAcceptKeyHandling=TriggerClick
-- GeneralProjectSettings:
-  - ProjectID=B43B9A544E36312B761CBFA56BFD83E9
+- CommonUI accept key handling.
+- [/Script/GameCore.AtlasDeveloperSettings]: map soft refs unset (None) until
+  editor maps exist; save defaults (PlayerSave_01, autosave on, 300 s,
+  checkpoint-on-travel off, auto-activate features on).
 
 Config/DefaultInput.ini
-- DefaultPlayerInputClass=/Script/EnhancedInput.EnhancedPlayerInput
-- DefaultInputComponentClass=/Script/EnhancedInput.EnhancedInputComponent
-- Standard axis configs for mouse/gamepad/XR inputs.
-- Console key is Tilde.
-- No project-specific Input Actions or Mapping Contexts are configured here.
-
-Config/DefaultEditor.ini
-- Empty.
+- EnhancedPlayerInput + EnhancedInputComponent. No project input assets yet.
 
 
 CONTENT STATE
 =============
 
-Content folder observed
-- Content/.gitignore
-- Content/Collections/
-- Content/Developers/
-- Content/Developers/uakro/Collections/
-
-Missing project content
-- No project-owned startup map.
-- No gameplay Blueprints.
-- No widget Blueprints.
-- No data assets.
-- No input actions or input mapping context assets.
-- No production-facing art/audio/VFX content.
-
-Runtime implication
-- The project currently boots into /Engine/Maps/Templates/OpenWorld.
-- Any feature work that requires assets should create a project-owned content structure first.
+- Content/ is still essentially empty (collections/developer folders only).
+- Must be authored in editor per project (see docs/guides/setup.md and the
+  sample plugin READMEs): MainMenu/gameplay maps with AAtlasPostLoadTrigger,
+  widget Blueprints (root/HUD/menu/modal/loading), UAtlasScreenDefinition +
+  UAtlasScreenRegistry assets, input actions/mapping contexts +
+  UAtlasInputConfigData, UAtlasAbilitySet/UAtlasPawnData/UAtlasCameraConfig,
+  GameFeatureData assets for the sample plugins.
+- The project currently boots into the engine Open World template map; the
+  startup flow degrades gracefully (enters MainMenu state in place).
 
 
-README STATUS
-=============
+DOCUMENTATION STATE
+===================
 
-README.md exists and describes the modular Atlas UE 5.7 foundation.
-
-Current mismatch
-- README still describes save/load mostly as registered systems with simple placeholder behavior.
-- The source now contains a more complete save/load stack:
-  - FAtlasSaveCollector
-  - FAtlasSaveScheduler
-  - FAtlasAutosaveManager
-  - FAtlasFileStorage
-  - FAtlasBinaryWriter/FAtlasBinaryReader
-  - UAtlasSavableComponent
-  - IAtlasSavable
-  - Inventory and GAS adapters
-- README should be updated if project documentation quality matters.
+- docs/guides/README.md: index. Guides: architecture, modules, setup,
+  common_ui, level_flow, gas, actors, game_features, conventions, testing.
+  These supersede the deleted planning docs and match the implementation.
+- docs/plan/README.md: all numbered plans implemented; lists remaining
+  remnants (below).
+- CLAUDE.md: instructions for Claude Code; kept in sync with the source.
+- README.md: user-facing overview; current.
+- All source files carry detailed block comments (dedicated commenting pass).
 
 
-KNOWN RISKS / CAVEATS
-=====================
+KNOWN REMNANTS / RISKS
+======================
 
-Build/test unknowns
-- No build was run during this context update.
-- No editor startup was verified.
-- No save/load runtime test was executed.
-- There may be compile/runtime issues not visible from static inspection.
+Unimplemented remnants (tracked in docs/plan/README.md)
+- Pre-travel acknowledgements: OnPreTravel is synchronous; no observer/ack
+  pattern with timeout for async pre-travel work.
+- "Atlas: Add Pawn Data" feature action (alternative pawn data per game
+  mode/context from a plugin).
+- UAtlasSavableComponent::OwningFeatureTag for purging feature-owned save data.
+- Editor content (maps, widgets, data assets).
 
-GameSystems residue
-- Git state and comments still mention Source/GameSystems/GameSystems.
-- Active code is Source/GameCore.
-- Clean stale comments/history when appropriate.
-
-Save metadata mismatch
-- FAtlasSaveGameSnapshot and UAtlasSaveGame exist but are not integrated into the active binary world snapshot save path.
-- LoadedSnapshot metadata and key/value getters may return nothing after a binary load.
-- Future prompts should be explicit about whether to unify this API or remove it.
-
-Actor lifecycle gaps
-- Load can spawn missing actors but does not destroy actors absent from the snapshot.
-- There is no level transition/loading orchestration before applying snapshots.
-- There is no completion/failure delegate API for UI/gameplay code.
-
-Component chunk fragility
-- Component chunks are keyed by component index and current component name.
-- Component order/name changes can break restore.
-- A more robust component ID strategy may be needed.
-
-Autosave behavior
-- Timer autosave is enabled by default every 300 seconds as soon as the save system initializes.
-- In an empty/default map, autosaves may write empty world snapshots unless no actors opt in.
-- Autosave index file is saved as a normal slot through FAtlasFileStorage.
-
-GAS adapter limitations
-- GameplayEffect restore is approximate.
-- Duration/time remaining is not truly restored.
-- Cooldown detection is heuristic.
-- Project-specific GAS requirements should be defined before relying on it.
-
-No Blueprint-facing orchestration
-- Save/load systems are pure C++ shared pointers behind UAtlasGameInstanceSubsystem.
-- There are no Blueprint function libraries or subsystem UFUNCTION wrappers for saving/loading.
-- UI/gameplay cannot call these systems from Blueprint without added API.
-
-No gameplay default setup
-- AAtlasGameMode and related framework classes are not configured as defaults.
-- No custom map overrides exist.
-- No input bindings exist.
-
-No tests
-- There are no automated tests for:
-  - system registration
-  - save scheduling priority/debounce
-  - binary serialization compatibility
-  - file storage failure cases
-  - actor/component restore
+Risks / gaps
+- No PIE/editor runtime validation has been run by AI sessions; behavior
+  verified by compilation only. Follow docs/guides/testing.md manually.
+- No automated tests (use FAutomationTestBase under
+  Source/<Module>/Private/Tests/ when added).
+- Save/load caveats listed in the save section (key-value API not integrated,
+  component chunk fragility, no completion delegates, no Blueprint facade,
+  approximate GAS effect restore, absent-actor cleanup).
+- Vehicle/mount attachment leaves collision handling, exit placement, and
+  actual vehicle physics to game projects (documented in code comments).
+- Loading screen fade durations exist in settings but fades are up to the
+  widget Blueprint.
 
 
-RECOMMENDED NEXT PROMPTS / IMPLEMENTATION AREAS
-===============================================
+RECOMMENDED NEXT TASKS
+======================
 
-Highest-value next architecture tasks
-1. Run a full UE build and fix compile errors, if any.
-2. Add runtime/manual tests for save/load with a minimal savable actor in a project-owned map.
-3. Decide whether FAtlasSaveGameSnapshot should be serialized into the binary format or removed from the public save/load API.
-4. Add completion/failure delegates for save/load requests.
-5. Expose save/load through Blueprint-friendly UFUNCTIONs or a UGameInstanceSubsystem facade API.
-6. Replace component index/name chunk matching with stable component IDs.
-7. Add a project-owned startup map and configure game mode defaults.
-8. Add Enhanced Input assets/bindings and wire AAtlasPlayerController.
-9. Implement real UAtlasUISubsystem screen stack/registry using CommonUI.
-10. Update README.md to match the current save/load implementation.
-
-Good first validation scenario
-- Create a test map under Content/Maps.
-- Add an actor with:
-  - UAtlasSavableComponent
-  - UAtlasInventorySaveAdapter
-- Populate inventory items in editor or BeginPlay.
-- Call IAtlasSaveSystem::SaveGame().
-- Mutate actor/inventory.
-- Call IAtlasLoadSystem::LoadGame().
-- Verify actor transform and inventory adapter state restore.
-
-Potential save/load API improvement prompt
-- "Unify Atlas save metadata with the binary world snapshot format. Persist FAtlasSaveGameMetadata in the binary header or world snapshot, populate LoadedSnapshot metadata on load, and add save/load completion delegates."
-
-Potential Blueprint API prompt
-- "Add Blueprint-callable methods on UAtlasGameInstanceSubsystem for SaveGame, LoadGame, RequestAutosave, DoesSaveExist, and save/load event delegates while preserving the existing IAtlasSystem implementation."
-
-Potential robustness prompt
-- "Replace component chunk names based on component index/name with a stable UAtlasSavableComponent-like component id for savable components, including migration-safe serialization."
+1. Author the editor content chain (maps + post-load triggers, screen
+   registry, pawn data chain) and validate the end-to-end flow in PIE and
+   standalone per docs/guides/testing.md.
+2. Add save/load completion delegates and a Blueprint-facing facade
+   (UFUNCTION wrappers on UAtlasGameInstanceSubsystem or a dedicated
+   Blueprint function library).
+3. Unify or remove the FAtlasSaveGameSnapshot key-value API relative to the
+   binary world snapshot format (persist FAtlasSaveGameMetadata in the binary
+   header and populate LoadedSnapshot on load).
+4. Replace component index/name chunk matching with stable component IDs.
+5. Implement the tracked remnants: pre-travel ack pattern, Add Pawn Data
+   action, OwningFeatureTag.
+6. Add automation tests (system registration, scheduler priority/debounce,
+   binary round-trip + migration, file storage failures, actor/component
+   restore).
 
 
 SHORT HANDOFF SUMMARY
 =====================
 
-This is a UE 5.7 modular C++ project named Game using an Atlas-style architecture. The live modules are Game, GameActors, GameCore, GameUI, and GameUtils. Runtime starts through UAtlasGameInstance, which ensures UAtlasGameInstanceSubsystem exists. That subsystem registers FAtlasSaveSystem and FAtlasLoadSystem through FAtlasSystemsRegistry and controls their lifecycle deterministically.
+UE 5.7 modular C++ template ("Atlas" framework) with five one-way-dependency
+modules: Game (thin host), GameCore (orchestrator subsystem + game flow,
+level transitions, travel-surviving loading screen, developer settings, asset
+manager, native tags, hardened async save/load with migrations and a JSON
+slot manifest), GameActors (GAS-ready actors with PlayerState-owned player
+ASC, extension components for pawn/ability/input/movement/vehicle/mount/
+camera, tag-based Enhanced Input -> ability activation, data-asset-driven
+pawn configuration, Modular Gameplay receivers + custom feature actions),
+GameUI (Common UI layered screen stack driven by a screen registry, modal/
+notification/loading services, input mode management, glyph subsystem), and
+GameUtils (logging/assertion macros used everywhere).
 
-GameCore now contains a real early save/load stack: savable actors opt in with UAtlasSavableComponent, actors/components can implement IAtlasSavable, FAtlasSaveCollector builds FAtlasWorldSnapshot data, FAtlasBinaryWriter/FAtlasBinaryReader serialize custom chunks, FAtlasFileStorage writes Saved/SaveGames/*.sav via temp files, FAtlasSaveScheduler handles manual/event/autosave priority queueing, and FAtlasAutosaveManager rotates five autosave slots. Load reads/deserializes asynchronously, then resolves or spawns actors and restores savable actor/component chunks on the game thread. Inventory and GAS save adapters exist, but the GAS adapter is approximate.
-
-The main current caveat is that FAtlasSaveGameSnapshot/UAtlasSaveGame key-value metadata APIs still exist but are not integrated with the active binary world snapshot save path. Gameplay classes and UI are still stubs, no project map or real content exists, and README.md is behind the current source. Treat Source/GameCore as active and ignore stale Source/GameSystems migration residue unless the user explicitly asks to clean Git state.
+All planning phases (0-11) are implemented and committed one per phase; both
+build targets compile clean. What remains is editor-authored content, runtime
+validation in PIE, automated tests, and the small remnants listed in
+docs/plan/README.md. docs/guides/ is the authoritative documentation; keep
+the module dependency graph inviolate and keep gameplay out of the source
+modules.

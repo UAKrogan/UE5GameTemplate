@@ -17,11 +17,23 @@ class GAMEUI_API UAtlasModalWidget : public UAtlasActivatableWidget
 public:
 	UAtlasModalWidget();
 
+	/*
+	 * Called by the UI subsystem right after the push. Stores the payload,
+	 * arms the result delegate, and fires BP_OnPayloadSet for text binding.
+	 */
 	void SetPayload(const FAtlasModalPayload& InPayload, FAtlasModalResultDelegate InResultDelegate);
 
+	/*
+	 * Resolves the dialog with bConfirmed = true and deactivates. Bind the
+	 * confirm button to this in the widget Blueprint.
+	 */
 	UFUNCTION(BlueprintCallable, Category = "Atlas UI|Modal")
 	void Confirm();
 
+	/*
+	 * Resolves the dialog with bConfirmed = false and deactivates. Also used
+	 * by DismissModal and back navigation.
+	 */
 	UFUNCTION(BlueprintCallable, Category = "Atlas UI|Modal")
 	void Cancel();
 

@@ -31,10 +31,18 @@ public:
 	virtual void StartPlay() override;
 
 	//~AGameModeBase interface
+
+	/*
+	 * Resolves the pawn class from DefaultPawnData when set; falls back to
+	 * the standard DefaultPawnClass otherwise.
+	 */
 	virtual UClass* GetDefaultPawnClassForController_Implementation(AController* InController) override;
 	//~End of AGameModeBase interface
 
 protected:
+	/*
+	 * Game-project hook called from StartPlay after the framework setup.
+	 */
 	virtual void InitializeGameMode();
 
 	/*

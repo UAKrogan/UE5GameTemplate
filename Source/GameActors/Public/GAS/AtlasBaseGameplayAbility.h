@@ -21,12 +21,23 @@ class GAMEACTORS_API UAtlasBaseGameplayAbility : public UGameplayAbility
 public:
 	UAtlasBaseGameplayAbility();
 
+	/*
+	 * Avatar actor cast to a pawn. Works for both AAtlasPawn and
+	 * AAtlasCharacter avatars (they share no common Atlas base class).
+	 */
 	UFUNCTION(BlueprintCallable, Category = "Atlas|Ability")
 	APawn* GetAvatarPawn() const;
 
+	/*
+	 * The avatar pawn's controller as an Atlas player controller; null for
+	 * AI-controlled avatars.
+	 */
 	UFUNCTION(BlueprintCallable, Category = "Atlas|Ability")
 	AAtlasPlayerController* GetAtlasPlayerController() const;
 
+	/*
+	 * The owning ASC cast to the Atlas type.
+	 */
 	UFUNCTION(BlueprintCallable, Category = "Atlas|Ability")
 	UAtlasAbilitySystemComponent* GetAtlasAbilitySystemComponent() const;
 

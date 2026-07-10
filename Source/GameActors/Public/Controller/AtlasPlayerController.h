@@ -32,14 +32,25 @@ protected:
 	virtual void SetupInputComponent() override;
 
 	//~AController interface
+	// OnUnPossess removes the input extension's mapping contexts; ability
+	// bindings die with the pawn's input component automatically.
 	virtual void OnPossess(APawn* InPawn) override;
 	virtual void OnUnPossess() override;
 	//~End of AController interface
 
+	/*
+	 * Game-project hook called from BeginPlay after the framework setup.
+	 */
 	virtual void InitializeController();
 
+	/*
+	 * Game-project hook called from SetupInputComponent for controller-level
+	 * (non-pawn) bindings, e.g. pause. Pawn input flows through InputExtComp.
+	 */
 	virtual void InitializeInput();
 
+	// Applies pawn data mapping contexts and binds ability input actions on
+	// pawn restart; cleaned up on unpossess.
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Atlas")
 	TObjectPtr<UAtlasInputExtensionComponent> InputExtComp;
 };

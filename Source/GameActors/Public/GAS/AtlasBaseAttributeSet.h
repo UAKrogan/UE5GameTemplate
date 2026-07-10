@@ -27,19 +27,37 @@ class GAMEACTORS_API UAtlasBaseAttributeSet : public UAttributeSet
 
 public:
 	//~UAttributeSet interface
+
+	/*
+	 * Clamp values before they are applied. Subclasses adding attributes
+	 * should call Super first, then clamp their own attributes here.
+	 */
 	virtual void PreAttributeChange(const FGameplayAttribute& Attribute, float& NewValue) override;
+
+	/*
+	 * React to instant effect execution (e.g. convert incoming Damage meta
+	 * attribute into Health changes). Empty at the framework level.
+	 */
 	virtual void PostGameplayEffectExecute(const FGameplayEffectModCallbackData& Data) override;
+
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 	//~End of UAttributeSet interface
 
 	ATLAS_ATTRIBUTE_ACCESSORS(UAtlasBaseAttributeSet, Level);
 
 protected:
+	/*
+	 * Shared clamp helper for PreAttributeChange implementations.
+	 */
 	static float ClampAttributeOnChange(float NewValue, float Min, float Max);
 
 	UFUNCTION()
 	virtual void OnRep_Level(const FGameplayAttributeData& OldLevel);
 
+	/*
+	 * Example framework-level attribute demonstrating the full replicated
+	 * attribute pattern (rep-notify + accessors). Not game-specific.
+	 */
 	UPROPERTY(BlueprintReadOnly, ReplicatedUsing = OnRep_Level, Category = "Attributes")
 	FGameplayAttributeData Level;
 };

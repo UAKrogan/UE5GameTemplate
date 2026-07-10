@@ -8,10 +8,16 @@
 UENUM(BlueprintType)
 enum class EAtlasGameFlowState : uint8
 {
+	// Boot state before any map is playable.
 	Startup,
+	// Main menu is active (with or without a dedicated menu map).
 	MainMenu,
+	// Gameplay is active.
 	Gameplay,
+	// Gameplay suspended by the player; resumable in place.
 	Paused,
+	// A level transition is in flight; the target state is applied on
+	// post-load (or reverted on failure).
 	Transitioning
 };
 
@@ -52,12 +58,23 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Atlas|Game Flow")
 	bool RequestGameplay(TSoftObjectPtr<UWorld> GameplayMap);
 
+	/*
+	 * Travels back to the configured main menu map and enters MainMenu on
+	 * post-load. Returns false when a transition is already in flight.
+	 */
 	UFUNCTION(BlueprintCallable, Category = "Atlas|Game Flow")
 	bool RequestReturnToMainMenu();
 
+	/*
+	 * Gameplay -> Paused state change. State only: pausing the world
+	 * (SetGamePaused) and pushing the pause screen are up to listeners.
+	 */
 	UFUNCTION(BlueprintCallable, Category = "Atlas|Game Flow")
 	void RequestPause();
 
+	/*
+	 * Paused -> Gameplay state change.
+	 */
 	UFUNCTION(BlueprintCallable, Category = "Atlas|Game Flow")
 	void RequestResume();
 
@@ -65,6 +82,10 @@ public:
 	FAtlasGameFlowStateChanged OnGameFlowStateChanged;
 
 protected:
+	/*
+	 * Per-state hooks for game-project subclasses, called around every state
+	 * change (before/after CurrentState is updated).
+	 */
 	virtual void OnPreEnterState(EAtlasGameFlowState NewState) {}
 	virtual void OnPostEnterState(EAtlasGameFlowState NewState) {}
 

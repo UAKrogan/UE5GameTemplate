@@ -62,6 +62,11 @@ enum class EAtlasInputDevice : uint8
 	Generic
 };
 
+/*
+ * Text content for a modal dialog. The result callback travels separately
+ * (FAtlasModalResultDelegate) because delegates are not UPROPERTY-safe
+ * inside a payload struct.
+ */
 USTRUCT(BlueprintType)
 struct FAtlasModalPayload
 {
@@ -83,6 +88,9 @@ struct FAtlasModalPayload
 	bool bShowCancel = true;
 };
 
+/*
+ * Content and lifetime for a transient toast notification.
+ */
 USTRUCT(BlueprintType)
 struct FAtlasNotificationPayload
 {
@@ -98,6 +106,10 @@ struct FAtlasNotificationPayload
 	EAtlasNotificationType Type = EAtlasNotificationType::Info;
 };
 
+/*
+ * Presentation options for a loading screen instance (background, tip,
+ * optional progress bar). Fade timing is up to the widget Blueprint.
+ */
 USTRUCT(BlueprintType)
 struct FAtlasLoadingScreenConfig
 {

@@ -25,5 +25,8 @@ protected:
 	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 	//~End of AActor interface
 
+	/*
+	 * Game-project hook called from BeginPlay after the framework setup.
+	 */
 	virtual void InitializeGameState();
 };

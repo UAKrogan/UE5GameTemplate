@@ -22,9 +22,15 @@ protected:
 	virtual void BeginPlay() override;
 
 	//~AController interface
+	// OnPossess creates/initializes the pawn-owned ASC via the pawn's
+	// extension components; OnUnPossess tears it down and revokes grants.
 	virtual void OnPossess(APawn* InPawn) override;
 	virtual void OnUnPossess() override;
 	//~End of AController interface
 
+	/*
+	 * Game-project hook called from BeginPlay after the framework setup
+	 * (e.g. run a behavior tree).
+	 */
 	virtual void InitializeAI();
 };

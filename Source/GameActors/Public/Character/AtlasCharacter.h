@@ -35,24 +35,36 @@ public:
 	//~End of IAbilitySystemInterface interface
 
 	//~APawn interface
+	// Possession hooks all route to PawnExtComp->HandleControllerChanged();
+	// the OnRep_* overrides are the client-side triggers (server-only
+	// OnPossess never runs on clients).
 	virtual void PossessedBy(AController* NewController) override;
 	virtual void UnPossessed() override;
 	virtual void OnRep_Controller() override;
 	virtual void OnRep_PlayerState() override;
+
+	// Runs on the owning client; forwards to the controller's input
+	// extension component to apply pawn data input configs.
 	virtual void SetupPlayerInputComponent(UInputComponent* PlayerInputComponent) override;
 	//~End of APawn interface
 
 	UAtlasPawnExtensionComponent* GetPawnExtensionComponent() const { return PawnExtComp; }
 
 protected:
+	/*
+	 * Game-project hook called from BeginPlay after the framework setup.
+	 */
 	virtual void InitializeCharacter();
 
+	// GAS initialization coordinator (pawn data, possession, ASC binding).
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Atlas")
 	TObjectPtr<UAtlasPawnExtensionComponent> PawnExtComp;
 
+	// Provides a pawn-owned ASC when this character is AI controlled.
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Atlas")
 	TObjectPtr<UAtlasAbilityExtensionComponent> AbilityExtComp;
 
+	// High-level movement mode tracking (ground/vehicle/mounted...).
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Atlas")
 	TObjectPtr<UAtlasMovementExtensionComponent> MovementExtComp;
 };

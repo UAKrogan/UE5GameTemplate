@@ -10,6 +10,10 @@ class UAbilitySystemComponent;
 class UAttributeSet;
 class UGameplayEffect;
 
+/*
+ * One captured attribute value: identified by attribute set class path +
+ * attribute name so restore works across sessions without object pointers.
+ */
 USTRUCT(BlueprintType)
 struct GAMECORE_API FAtlasGASAttributeSaveData
 {
@@ -28,6 +32,10 @@ struct GAMECORE_API FAtlasGASAttributeSaveData
 	float CurrentValue = 0.0f;
 };
 
+/*
+ * One captured active gameplay effect, including enough timing/stack data to
+ * re-apply it with the remaining duration after a load.
+ */
 USTRUCT(BlueprintType)
 struct GAMECORE_API FAtlasGASEffectSaveData
 {

@@ -22,9 +22,17 @@ class GAMEUI_API UAtlasRootWidget : public UCommonUserWidget
 	GENERATED_BODY()
 
 public:
+	/*
+	 * Returns the activatable stack for Game/Menu/Modal layers. Ensures
+	 * (soft) when asked for an overlay layer.
+	 */
 	UFUNCTION(BlueprintCallable, Category = "Atlas UI")
 	UCommonActivatableWidgetStack* GetLayerStack(EAtlasUILayer Layer) const;
 
+	/*
+	 * Returns the overlay for Notification/Loading layers. Ensures (soft)
+	 * when asked for a stack layer.
+	 */
 	UFUNCTION(BlueprintCallable, Category = "Atlas UI")
 	UOverlay* GetLayerOverlay(EAtlasUILayer Layer) const;
 

@@ -35,15 +35,31 @@ public:
 
 	// ── Screens ──────────────────────────────────────────────────────
 
+	/*
+	 * Resolves the screen definition from the registry, creates the widget
+	 * on the definition's layer, and applies its input mode. The optional
+	 * Context is handed to the widget via InitializeWithContext before
+	 * activation. Returns null on failure (unknown ID, unloadable class,
+	 * single-instance screen already active).
+	 */
 	UFUNCTION(BlueprintCallable, Category = "Atlas UI", meta = (AdvancedDisplay = "Context"))
 	UAtlasActivatableWidget* PushScreen(FName ScreenId, UObject* Context = nullptr);
 
+	/*
+	 * Pops the top-most active instance of the given screen ID.
+	 */
 	UFUNCTION(BlueprintCallable, Category = "Atlas UI")
 	void PopScreen(FName ScreenId);
 
+	/*
+	 * Pops every tracked screen on every layer (e.g. before level travel).
+	 */
 	UFUNCTION(BlueprintCallable, Category = "Atlas UI")
 	void PopAllScreens();
 
+	/*
+	 * The top-most active screen: highest layer wins, then most recent push.
+	 */
 	UFUNCTION(BlueprintCallable, Category = "Atlas UI")
 	UAtlasActivatableWidget* GetActiveScreen() const;
 
@@ -65,30 +81,55 @@ public:
 
 	// ── HUD ──────────────────────────────────────────────────────────
 
+	/*
+	 * Pushes/pops the screen registered under the HUDScreenId configured in
+	 * Atlas UI settings (default "HUD").
+	 */
 	UFUNCTION(BlueprintCallable, Category = "Atlas UI|HUD")
 	void ShowHUD();
 
 	UFUNCTION(BlueprintCallable, Category = "Atlas UI|HUD")
 	void HideHUD();
 
+	/*
+	 * The active HUD screen cast to UAtlasHUDWidget, or null when no HUD is
+	 * on screen. Used by feature actions to inject HUD elements.
+	 */
 	UFUNCTION(BlueprintCallable, Category = "Atlas UI|HUD")
 	UAtlasHUDWidget* GetActiveHUDWidget() const;
 
 	// ── Modals ───────────────────────────────────────────────────────
 
+	/*
+	 * Pushes the modal screen (must resolve to a UAtlasModalWidget), hands
+	 * it the payload, and fires OnResult(bConfirmed) exactly once when the
+	 * dialog is confirmed, cancelled, or dismissed.
+	 */
 	UFUNCTION(BlueprintCallable, Category = "Atlas UI|Modal", meta = (AutoCreateRefTerm = "OnResult"))
 	void ShowModal(FName ModalId, FAtlasModalPayload Payload, const FAtlasModalResultDelegate& OnResult);
 
+	/*
+	 * Cancels the active modal (its result delegate fires with false).
+	 */
 	UFUNCTION(BlueprintCallable, Category = "Atlas UI|Modal")
 	void DismissModal();
 
 	// ── Notifications ────────────────────────────────────────────────
 
+	/*
+	 * Shows a non-blocking toast on the Notification layer; auto-removed
+	 * after the payload's display duration.
+	 */
 	UFUNCTION(BlueprintCallable, Category = "Atlas UI|Notification")
 	void ShowNotification(FAtlasNotificationPayload Payload);
 
 	// ── Loading screen ───────────────────────────────────────────────
 
+	/*
+	 * Shows a loading screen on the root widget's Loading layer. For level
+	 * travel use UAtlasLoadingScreenSubsystem (GameCore) instead — this one
+	 * lives inside the root widget and does not survive travel by itself.
+	 */
 	UFUNCTION(BlueprintCallable, Category = "Atlas UI|Loading")
 	void ShowLoadingScreen(FAtlasLoadingScreenConfig Config);
 
@@ -100,6 +141,11 @@ public:
 
 	// ── Input mode ───────────────────────────────────────────────────
 
+	/*
+	 * Applies an input mode to the first local player controller and
+	 * broadcasts OnInputModeChanged. Usually driven automatically by the
+	 * screen stack — call directly only for special cases.
+	 */
 	UFUNCTION(BlueprintCallable, Category = "Atlas UI|Input")
 	void SetInputMode(EAtlasInputMode Mode);
 

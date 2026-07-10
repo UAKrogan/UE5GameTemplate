@@ -17,6 +17,11 @@ class UActorComponent;
 class GAMECORE_API FAtlasSaveCollector
 {
 public:
+	/*
+	 * Walks the world's actors and captures every IAtlasSavable actor and
+	 * component into a pure-data snapshot. Each actor gets one chunk for its
+	 * own state plus one per savable component.
+	 */
 	static FAtlasWorldSnapshot CollectWorld(UWorld* World);
 
 private:

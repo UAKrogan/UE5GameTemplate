@@ -6,6 +6,8 @@
 #include "GameFramework/GameMode.h"
 #include "AtlasGameMode.generated.h"
 
+class UAtlasPawnData;
+
 /*
  * Base game mode for Atlas projects.
  *
@@ -23,6 +25,17 @@ public:
 
 	virtual void StartPlay() override;
 
+	//~AGameModeBase interface
+	virtual UClass* GetDefaultPawnClassForController_Implementation(AController* InController) override;
+	//~End of AGameModeBase interface
+
 protected:
 	virtual void InitializeGameMode();
+
+	/*
+	 * Per-map pawn configuration; when set, the default pawn class is
+	 * resolved from this pawn data instead of DefaultPawnClass.
+	 */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Atlas")
+	TSoftObjectPtr<UAtlasPawnData> DefaultPawnData;
 };

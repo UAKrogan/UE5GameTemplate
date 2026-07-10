@@ -1,5 +1,6 @@
 #include "Systems/Serialization/AtlasBinaryReader.h"
 
+#include "Systems/Save/AtlasSaveMigrationManager.h"
 #include "Systems/Serialization/AtlasBinaryWriter.h"
 #include "Logging/AtlasLogMacros.h"
 
@@ -42,6 +43,16 @@ bool FAtlasBinaryReader::ReadSnapshot(FAtlasWorldSnapshot& OutWorldSnapshot)
 	{
 		OutWorldSnapshot.Reset();
 		return false;
+	}
+
+	// Older payloads are upgraded in place before being handed to the loader.
+	if (Header.Version < FAtlasBinaryWriter::CurrentVersion)
+	{
+		if (!FAtlasSaveMigrationManager::MigrateSnapshot(OutWorldSnapshot, Header.Version, FAtlasBinaryWriter::CurrentVersion))
+		{
+			OutWorldSnapshot.Reset();
+			return false;
+		}
 	}
 
 	return !HasArchiveError() && ChunkNameStack.IsEmpty();

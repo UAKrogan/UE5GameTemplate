@@ -3,6 +3,7 @@
 #include "Logging/AtlasLogMacros.h"
 #include "Subsystems/AtlasGameInstanceSubsystem.h"
 #include "Systems/Save/AtlasSaveCollector.h"
+#include "Systems/Save/AtlasSaveSlotManifest.h"
 #include "Systems/Serialization/AtlasBinaryWriter.h"
 #include "Systems/Storage/AtlasFileStorage.h"
 
@@ -274,6 +275,9 @@ void FAtlasSaveSystem::HandleSaveCompleted(const FAtlasScheduledSaveRequest& Req
 
 	if (bSuccess)
 	{
+		FAtlasSaveSlotManifest::AddSlot(Request.SlotName,
+			BuildSnapshotForSave(Request.SlotName, AtlasSaveSystem::DefaultUserIndex).Metadata);
+
 		ATLAS_LOG_CORE(Log, "Save completed: slot=%s priority=%d autosave=%s event=%s actors=%d bytes=%d",
 			*Request.SlotName,
 			static_cast<int32>(Request.Priority),

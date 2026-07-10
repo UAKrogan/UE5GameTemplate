@@ -5,6 +5,8 @@
 #include "Systems/Save/AtlasSaveScheduler.h"
 #include "Systems/WorldState/AtlasWorldSnapshotTypes.h"
 
+#include <atomic>
+
 class UAtlasGameInstanceSubsystem;
 class UWorld;
 
@@ -68,8 +70,10 @@ private:
 	FAtlasSaveGameSnapshot PendingSnapshot;
 	FAtlasSaveScheduler SaveScheduler;
 
-	// Only accessed on the game thread. Async callbacks must be dispatched via
-	// AsyncTask(ENamedThreads::GameThread, ...) before reading or writing these flags.
-	bool bSaveInProgress = false;
+	// Atomic so the flag stays coherent even if a completion callback ever
+	// fires off the game thread; writes still happen on the game thread.
+	std::atomic<bool> bSaveInProgress{false};
+
+	// Only accessed on the game thread.
 	bool bShuttingDown = false;
 };

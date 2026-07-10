@@ -2,8 +2,16 @@
 
 #include "Kismet/GameplayStatics.h"
 #include "Logging/AtlasLogMacros.h"
+#include "Subsystems/AtlasGameInstanceSubsystem.h"
 #include "Subsystems/AtlasLoadingScreenSubsystem.h"
+#include "Systems/Load/IAtlasLoadSystem.h"
+#include "Systems/Save/IAtlasSaveSystem.h"
 #include "UObject/UObjectGlobals.h"
+
+namespace AtlasLevelTransition
+{
+	const TCHAR* TravelCheckpointSlotName = TEXT("Checkpoint_Travel");
+}
 
 void UAtlasLevelTransitionSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 {
@@ -46,6 +54,19 @@ bool UAtlasLevelTransitionSubsystem::RequestTransition(const FAtlasLevelTransiti
 
 	OnPreTravel.Broadcast(PendingRequest);
 
+	if (Request.bSaveCheckpointBeforeTravel)
+	{
+		// World state is collected synchronously on the game thread before
+		// travel starts; serialization and the file write complete async.
+		if (const UAtlasGameInstanceSubsystem* Systems = GetGameInstance()->GetSubsystem<UAtlasGameInstanceSubsystem>())
+		{
+			if (const TSharedPtr<IAtlasSaveSystem> SaveSystem = Systems->GetSystem<IAtlasSaveSystem>())
+			{
+				SaveSystem->RequestEventSave(AtlasLevelTransition::TravelCheckpointSlotName);
+			}
+		}
+	}
+
 	if (Request.bShowLoadingScreen)
 	{
 		if (UAtlasLoadingScreenSubsystem* LoadingScreen = GetGameInstance()->GetSubsystem<UAtlasLoadingScreenSubsystem>())
@@ -72,6 +93,17 @@ void UAtlasLevelTransitionSubsystem::NotifyLevelLoaded()
 	ATLAS_LOG_CORE(Log, "Transition post-load: %s", *PendingRequest.DestinationMap.ToSoftObjectPath().ToString());
 
 	OnPostLoad.Broadcast(PendingRequest);
+
+	if (!PendingRequest.LoadSlotOnPostLoad.IsEmpty())
+	{
+		if (const UAtlasGameInstanceSubsystem* Systems = GetGameInstance()->GetSubsystem<UAtlasGameInstanceSubsystem>())
+		{
+			if (const TSharedPtr<IAtlasLoadSystem> LoadSystem = Systems->GetSystem<IAtlasLoadSystem>())
+			{
+				LoadSystem->RequestLoad(PendingRequest.LoadSlotOnPostLoad);
+			}
+		}
+	}
 
 	if (PendingRequest.bShowLoadingScreen)
 	{

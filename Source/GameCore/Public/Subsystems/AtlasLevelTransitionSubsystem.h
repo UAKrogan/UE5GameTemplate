@@ -46,11 +46,20 @@ struct GAMECORE_API FAtlasLevelTransitionRequest
 	bool bShowLoadingScreen = true;
 
 	/*
-	 * Checkpoint save before travel; honored once the save system is wired
-	 * into the pre-travel phase (Phase 9).
+	 * When true, an event-priority checkpoint save is requested in the
+	 * pre-travel phase. World state is collected synchronously on the game
+	 * thread before travel; serialization and the file write finish
+	 * asynchronously and are unaffected by the world teardown.
 	 */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Transition")
 	bool bSaveCheckpointBeforeTravel = false;
+
+	/*
+	 * When set, this save slot is loaded (world state restored) right after
+	 * the destination level's post-load phase.
+	 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Transition")
+	FString LoadSlotOnPostLoad;
 };
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FAtlasLevelTransitionEvent, const FAtlasLevelTransitionRequest&, Request);

@@ -22,7 +22,9 @@ public class GameCore : ModuleRules
 		PrivateDependencyModuleNames.AddRange([
 			// Loading screen subsystem creates the (generic UUserWidget)
 			// loading widget and adds it to the viewport.
-			"UMG", "Slate", "SlateCore"
+			"UMG", "Slate", "SlateCore",
+			// Save slot manifest.
+			"Json"
 		]);
 	}
 }

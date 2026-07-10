@@ -4,6 +4,8 @@
 #include "Systems/Load/IAtlasLoadSystem.h"
 #include "Systems/WorldState/AtlasWorldSnapshotTypes.h"
 
+#include <atomic>
+
 class AActor;
 class UActorComponent;
 class UAtlasGameInstanceSubsystem;
@@ -78,8 +80,10 @@ private:
 	FAtlasSaveGameSnapshot LoadedSnapshot;
 	FAtlasWorldSnapshot LoadedWorldSnapshot;
 
-	// Only accessed on the game thread. Async callbacks must be dispatched via
-	// AsyncTask(ENamedThreads::GameThread, ...) before reading or writing these flags.
-	bool bLoadInProgress = false;
+	// Atomic so the flag stays coherent even if a completion callback ever
+	// fires off the game thread; writes still happen on the game thread.
+	std::atomic<bool> bLoadInProgress{false};
+
+	// Only accessed on the game thread.
 	bool bShuttingDown = false;
 };

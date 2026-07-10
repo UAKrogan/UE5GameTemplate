@@ -138,5 +138,5 @@ Assertions:
 
 ## Docs
 
-- `docs/guides/` — user-facing guides (start at `README.md` there)
-- `docs/plan/` — original design/planning docs (00–13); implementation followed the roadmap in `12_implementation_roadmap.md`
+- `docs/guides/` — user-facing guides (start at `README.md` there); these describe the implemented behavior and are the source of truth
+- `docs/plan/` — only open future work remains: `06_movement.md` (vehicles, mounts, camera config — unimplemented) plus a README listing smaller remnants. Implemented plans (00–13) were removed after the phased implementation and live in git history

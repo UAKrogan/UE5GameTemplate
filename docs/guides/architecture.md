@@ -24,19 +24,23 @@ Dependencies flow strictly one way. A module may only depend on modules to its r
 │ Deps:     │  │ Deps:       │  │ Deps:     │  │ Deps:             │
 │ GameUtils │  │ GameUtils   │  │ GameUtils │  │ Core, CoreUObject │
 │ GAS mods  │  │ GAS modules │  │ UMG       │  │                   │
-│ EnhInput  │  │             │  │ CommonUI  │  │                   │
-│ AIModule  │  │             │  │ Slate     │  │                   │
+│ EnhInput  │  │ DevSettings │  │ CommonUI  │  │                   │
+│ AIModule  │  │ (UMG, Json  │  │ CommonInp │  │                   │
+│ ModularGP │  │  private)   │  │ GameFeats │  │                   │
+│ GameFeats │  │             │  │ DevSett.  │  │                   │
 └───────────┘  └─────────────┘  └───────────┘  └───────────────────┘
 ```
 
 ### Strict rules
 
 1. `GameUtils` depends on nothing local.
-2. `GameCore` depends on `GameUtils` only (plus engine `GameplayAbilities`, `GameplayTags`, `GameplayTasks`).
-3. `GameActors` depends on `GameUtils` only (plus engine GAS modules, `EnhancedInput`, `AIModule`). **No dependency on `GameCore` or `GameUI`.**
-4. `GameUI` depends on `GameUtils` only (plus `UMG`, `CommonUI`, `Slate`). **No dependency on `GameCore` or `GameActors`.**
+2. `GameCore` depends on `GameUtils` only (plus engine `GameplayAbilities`, `GameplayTags`, `GameplayTasks`, `DeveloperSettings`; private `UMG`/`Slate`/`SlateCore` for the generic loading widget and `Json` for the save manifest).
+3. `GameActors` depends on `GameUtils` only (plus engine GAS modules, `EnhancedInput`, `AIModule`, `ModularGameplay`, `GameFeatures`). **No dependency on `GameCore` or `GameUI`.**
+4. `GameUI` depends on `GameUtils` only (plus `UMG`, `CommonUI`, `CommonInput`, `InputCore`, `DeveloperSettings`, `GameFeatures`; private `Slate`/`SlateCore`). **No dependency on `GameCore` or `GameActors`.**
 5. `Game` is the only source module allowed to depend on all other modules.
 6. Game Feature plugins may depend on any source module but never on another feature plugin.
+
+When a design conflicts with this graph, the graph wins — bridge with soft object paths, delegates, or data assets. Existing examples: UI configuration lives in `UAtlasUIDeveloperSettings` (GameUI) rather than GameCore's settings; GameCore's loading screen subsystem handles its widget generically as `UUserWidget` via a soft class path; `AAtlasPostLoadTrigger` lives in GameCore because it exists solely to call the transition subsystem.
 
 ## Runtime Lifecycle
 

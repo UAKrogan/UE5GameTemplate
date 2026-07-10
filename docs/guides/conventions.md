@@ -138,9 +138,9 @@ Dependencies flow one way only:
 
 ```
 Game → GameActors, GameCore, GameUI, GameUtils
-GameActors → GameUtils (+ engine GAS modules)
-GameCore → GameUtils (+ engine GAS modules)
-GameUI → GameUtils (+ UMG, CommonUI, Slate)
+GameActors → GameUtils (+ GAS modules, EnhancedInput, AIModule, ModularGameplay, GameFeatures)
+GameCore → GameUtils (+ GAS modules, DeveloperSettings; private UMG/Slate/Json)
+GameUI → GameUtils (+ UMG, CommonUI, CommonInput, InputCore, DeveloperSettings, GameFeatures)
 GameUtils → (no local deps)
 ```
 

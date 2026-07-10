@@ -26,7 +26,7 @@ Requirements: UE 5.7, Visual Studio 2022+ or Rider.
 Start at [docs/guides/README.md](docs/guides/README.md):
 architecture, modules, setup, Common UI, level flow, GAS, actors, Game Features, conventions, testing.
 
-Design/planning documents live in [docs/plan/](docs/plan/).
+Remaining future-work designs (vehicles/mounts/camera) live in [docs/plan/](docs/plan/README.md); implemented plans were removed and are preserved in git history.
 
 ## Layout
 
@@ -39,7 +39,7 @@ Source/
   GameUtils/   logging + assertion macros
 Plugins/GameFeatures/   sample feature plugins ([TEMPLATE EXAMPLE], deletable)
 Config/                 project config (Atlas settings in DefaultGame.ini)
-docs/                   guides + planning docs
+docs/                   guides + open future-work designs
 ```
 
 ## Still content-free by design

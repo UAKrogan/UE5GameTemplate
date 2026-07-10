@@ -19,6 +19,10 @@ public class GameCore : ModuleRules
 			"GameplayAbilities", "GameplayTags", "GameplayTasks"
 		]);
 
-		PrivateDependencyModuleNames.AddRange([]);
+		PrivateDependencyModuleNames.AddRange([
+			// Loading screen subsystem creates the (generic UUserWidget)
+			// loading widget and adds it to the viewport.
+			"UMG", "Slate", "SlateCore"
+		]);
 	}
 }

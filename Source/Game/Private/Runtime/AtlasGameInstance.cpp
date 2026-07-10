@@ -1,6 +1,7 @@
 ﻿// Fill out your copyright notice in the Description page of Project Settings.
 
 #include "Runtime/AtlasGameInstance.h"
+#include "Subsystems/AtlasGameFlowSubsystem.h"
 #include "Subsystems/AtlasGameInstanceSubsystem.h"
 #include "Logging/AtlasLogMacros.h"
 
@@ -22,6 +23,16 @@ void UAtlasGameInstance::Init()
 	 *     auto System = Subsystem->GetSystem<IMySystem>();
 	 * }
 	 */
+}
+
+void UAtlasGameInstance::OnStart()
+{
+	Super::OnStart();
+
+	if (UAtlasGameFlowSubsystem* GameFlow = GetSubsystem<UAtlasGameFlowSubsystem>())
+	{
+		GameFlow->StartGameFlow();
+	}
 }
 
 void UAtlasGameInstance::Shutdown()

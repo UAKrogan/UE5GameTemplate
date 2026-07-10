@@ -42,7 +42,7 @@ GameUtils → (no local deps)
 |---|---|
 | `Game` | Thin host. `UAtlasGameInstance` bootstrap (`Init` + `OnStart` → `StartGameFlow`). `IMPLEMENT_PRIMARY_GAME_MODULE`. |
 | `GameCore` | Runtime systems + subsystem orchestration: `UAtlasGameInstanceSubsystem` (service locator), game flow / level transition / loading screen subsystems, `UAtlasAssetManager`, `UAtlasDeveloperSettings`, native tags (`AtlasGameplayTags`), save/load pipeline, `AAtlasPostLoadTrigger`. |
-| `GameActors` | GAS-ready base classes (`AAtlasCharacter`, `AAtlasPawn`, controllers, game mode/state, `AAtlasPlayerState` owning the player ASC), extension components (PawnExt/AbilityExt/InputExt/MovementExt), `UAtlasAbilitySystemComponent`, `UAtlasBaseAttributeSet`, `UAtlasBaseGameplayAbility`, data assets (`UAtlasPawnData`, `UAtlasAbilitySet`, `UAtlasInputConfigData`), feature actions (AddAbilities, AddInputConfig). |
+| `GameActors` | GAS-ready base classes (`AAtlasCharacter`, `AAtlasPawn` + vehicle/mount pawns, controllers, game mode/state, `AAtlasPlayerState` owning the player ASC), extension components (PawnExt/AbilityExt/InputExt/MovementExt/VehicleExt/MountExt/CameraExt), `UAtlasAbilitySystemComponent`, `UAtlasBaseAttributeSet`, `UAtlasBaseGameplayAbility`, data assets (`UAtlasPawnData`, `UAtlasAbilitySet`, `UAtlasInputConfigData`, `UAtlasCameraConfig`), feature actions (AddAbilities, AddInputConfig). |
 | `GameUI` | `UAtlasUISubsystem` (layered screen stack), `UAtlasRootWidget` + base widgets, `UAtlasScreenDefinition`/`UAtlasScreenRegistry`, `UAtlasUIDeveloperSettings`, `UAtlasGlyphSubsystem`, feature actions (AddScreens, AddHUDElements). No widget assets — authored per game. |
 | `GameUtils` | Log categories, logging macros, assertion helpers. Nothing else. |
 
@@ -64,6 +64,7 @@ Engine subsystems (`UGameInstanceSubsystem`) are used where UObject lifecycle/Bl
 - `UAtlasPawnExtensionComponent` is the init hub: possession hooks (`PossessedBy`/`OnRep_Controller`/`OnRep_PlayerState`) call `HandleControllerChanged()`; grants `UAtlasPawnData` ability sets on authority; fires `OnAbilitySystemInitialized`.
 - Input: tag-based (`Atlas.Input.Ability.*`). `UAtlasInputExtensionComponent` (on the player controller, wired from the pawn's `SetupPlayerInputComponent`) binds input actions from `UAtlasInputConfigData` to `AbilityInputTagPressed/Released` on the ASC. Input never references ability classes.
 - All base actors are Modular Gameplay receivers (`AddGameFrameworkComponentReceiver` in `PreInitializeComponents`, `NAME_GameActorReady` in `BeginPlay`, remove in `EndPlay`).
+- Movement: `UAtlasMovementExtensionComponent` owns the replicated high-level mode (`EAtlasMovementMode` incl. `InVehicle`/`Mounted`) and syncs with `UCharacterMovementComponent`. Vehicle/mount enter-exit goes through `UAtlasVehicleExtensionComponent`/`UAtlasMountExtensionComponent` (seat/rider bookkeeping, optional per-mode input + camera configs); default input contexts are suppressed while attached; `UAtlasCameraExtensionComponent` applies `UAtlasCameraConfig` (pawn data default, vehicle/mount push overrides).
 
 ## UI System
 
@@ -139,4 +140,4 @@ Assertions:
 ## Docs
 
 - `docs/guides/` — user-facing guides (start at `README.md` there); these describe the implemented behavior and are the source of truth
-- `docs/plan/` — only open future work remains: `06_movement.md` (vehicles, mounts, camera config — unimplemented) plus a README listing smaller remnants. Implemented plans (00–13) were removed after the phased implementation and live in git history
+- `docs/plan/` — all numbered plans (00–13) are implemented and removed (text in git history); only a README listing small unimplemented remnants remains

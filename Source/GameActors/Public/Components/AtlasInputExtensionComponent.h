@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Components/ActorComponent.h"
+#include "Components/AtlasMovementExtensionComponent.h"
 #include "GameplayTagContainer.h"
 #include "AtlasInputExtensionComponent.generated.h"
 
@@ -17,6 +18,12 @@ class UInputComponent;
  * pawn's Enhanced Input component. Tag presses route to the pawn's ASC via
  * AbilityInputTagPressed/Released — input actions never reference ability
  * classes directly.
+ *
+ * Movement mode integration: while the pawn is InVehicle/Mounted, the pawn
+ * data's default mapping contexts are suppressed (mode-specific contexts —
+ * drive/ride controls — are applied by the vehicle/mount extension via
+ * ApplyConfig). Suppression toggles mapping contexts only, so ability
+ * bindings on the pawn's input component are never duplicated.
  */
 UCLASS(meta = (BlueprintSpawnableComponent))
 class GAMEACTORS_API UAtlasInputExtensionComponent : public UActorComponent
@@ -56,8 +63,29 @@ private:
 	void HandleAbilityInputPressed(FGameplayTag InputTag);
 	void HandleAbilityInputReleased(FGameplayTag InputTag);
 
+	/*
+	 * Reacts to the bound pawn's movement mode: suppresses the default
+	 * mapping contexts while attached (vehicle/mount), resumes them after.
+	 */
+	UFUNCTION()
+	void HandleMovementModeChanged(EAtlasMovementMode OldMode, EAtlasMovementMode NewMode);
+
+	/*
+	 * Adds/removes only the mapping contexts of the pawn data's default
+	 * configs — bindings and AppliedConfigs bookkeeping stay untouched.
+	 */
+	void SetDefaultContextsSuppressed(bool bSuppressed);
+
 	UPROPERTY(Transient)
 	TArray<TObjectPtr<const UAtlasInputConfigData>> AppliedConfigs;
 
+	// Subset of AppliedConfigs that came from the pawn data (as opposed to
+	// runtime configs from features/vehicles); these get suppressed while
+	// the pawn is in an attached movement mode.
+	UPROPERTY(Transient)
+	TArray<TObjectPtr<const UAtlasInputConfigData>> DefaultConfigs;
+
 	TWeakObjectPtr<APawn> BoundPawn;
+	TWeakObjectPtr<UAtlasMovementExtensionComponent> BoundMovementExt;
+	bool bDefaultContextsSuppressed = false;
 };

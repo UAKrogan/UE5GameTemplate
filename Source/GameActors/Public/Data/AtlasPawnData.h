@@ -5,6 +5,7 @@
 
 class APawn;
 class UAtlasAbilitySet;
+class UAtlasCameraConfig;
 class UAtlasInputConfigData;
 
 /*
@@ -35,4 +36,9 @@ public:
 	// Applied on possession by the input extension component.
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Input")
 	TArray<TSoftObjectPtr<UAtlasInputConfigData>> InputConfigs;
+
+	// Default camera setup, applied by the camera extension component when
+	// one is present on the pawn. Optional.
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Camera")
+	TSoftObjectPtr<UAtlasCameraConfig> CameraConfig;
 };

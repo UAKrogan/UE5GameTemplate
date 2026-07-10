@@ -36,7 +36,23 @@ void UAtlasInputExtensionComponent::InitializeForPawn(APawn* InPawn, UInputCompo
 
 	for (const TSoftObjectPtr<UAtlasInputConfigData>& ConfigPtr : PawnData->InputConfigs)
 	{
-		ApplyConfig(ConfigPtr.LoadSynchronous());
+		const UAtlasInputConfigData* Config = ConfigPtr.LoadSynchronous();
+		ApplyConfig(Config);
+
+		// Remember which configs are pawn defaults: those are the ones
+		// suppressed while the pawn is in a vehicle or mounted.
+		if (Config != nullptr)
+		{
+			DefaultConfigs.Add(Config);
+		}
+	}
+
+	// Follow the pawn's movement mode so drive/ride transitions can swap
+	// input contexts without the vehicle/mount code touching pawn defaults.
+	if (UAtlasMovementExtensionComponent* MovementExt = UAtlasMovementExtensionComponent::FindMovementExtensionComponent(InPawn))
+	{
+		MovementExt->OnMovementModeChanged.AddDynamic(this, &UAtlasInputExtensionComponent::HandleMovementModeChanged);
+		BoundMovementExt = MovementExt;
 	}
 
 	ATLAS_LOG_ACTORS(Log, "Input initialized for %s (%d configs)", *InPawn->GetName(), AppliedConfigs.Num());
@@ -139,8 +155,16 @@ void UAtlasInputExtensionComponent::Cleanup()
 		}
 	}
 
+	if (UAtlasMovementExtensionComponent* MovementExt = BoundMovementExt.Get())
+	{
+		MovementExt->OnMovementModeChanged.RemoveDynamic(this, &UAtlasInputExtensionComponent::HandleMovementModeChanged);
+	}
+
 	AppliedConfigs.Reset();
+	DefaultConfigs.Reset();
 	BoundPawn.Reset();
+	BoundMovementExt.Reset();
+	bDefaultContextsSuppressed = false;
 }
 
 void UAtlasInputExtensionComponent::HandleAbilityInputPressed(FGameplayTag InputTag)
@@ -163,4 +187,54 @@ void UAtlasInputExtensionComponent::HandleAbilityInputReleased(FGameplayTag Inpu
 			ASC->AbilityInputTagReleased(InputTag);
 		}
 	}
+}
+
+void UAtlasInputExtensionComponent::HandleMovementModeChanged(EAtlasMovementMode OldMode, EAtlasMovementMode NewMode)
+{
+	const bool bAttached =
+		NewMode == EAtlasMovementMode::InVehicle || NewMode == EAtlasMovementMode::Mounted;
+
+	SetDefaultContextsSuppressed(bAttached);
+}
+
+void UAtlasInputExtensionComponent::SetDefaultContextsSuppressed(bool bSuppressed)
+{
+	if (bSuppressed == bDefaultContextsSuppressed)
+	{
+		return;
+	}
+	bDefaultContextsSuppressed = bSuppressed;
+
+	const APlayerController* PlayerController = Cast<APlayerController>(GetOwner());
+	const ULocalPlayer* LocalPlayer = PlayerController != nullptr ? PlayerController->GetLocalPlayer() : nullptr;
+	UEnhancedInputLocalPlayerSubsystem* InputSubsystem =
+		LocalPlayer != nullptr ? LocalPlayer->GetSubsystem<UEnhancedInputLocalPlayerSubsystem>() : nullptr;
+	if (InputSubsystem == nullptr)
+	{
+		return;
+	}
+
+	// Only the mapping contexts toggle: ability bindings stay bound (their
+	// actions simply never trigger without a context) so resuming does not
+	// double-bind on the pawn's input component.
+	for (const UAtlasInputConfigData* Config : DefaultConfigs)
+	{
+		UInputMappingContext* MappingContext = Config != nullptr ? Config->MappingContext.Get() : nullptr;
+		if (MappingContext == nullptr)
+		{
+			continue;
+		}
+
+		if (bSuppressed)
+		{
+			InputSubsystem->RemoveMappingContext(MappingContext);
+		}
+		else
+		{
+			InputSubsystem->AddMappingContext(MappingContext, Config->Priority);
+		}
+	}
+
+	ATLAS_LOG_ACTORS(Log, "Default input contexts %s for %s",
+		bSuppressed ? TEXT("suppressed") : TEXT("resumed"), *GetNameSafe(BoundPawn.Get()));
 }

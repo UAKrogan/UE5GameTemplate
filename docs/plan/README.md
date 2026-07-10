@@ -1,12 +1,10 @@
 # Planning Docs
 
-The original design documents (00–13) drove the phased implementation (see the `Phase 0` … `Phase 10` commits on `master`) and have been removed now that the features exist — the implemented behavior is documented in [docs/guides/](../guides/README.md), which supersedes them. The full plan text remains available in git history.
+The original design documents (00–13) drove the phased implementation (see the `Phase 0` … `Phase 11` commits on `master`) and have been removed as their features landed — the implemented behavior is documented in [docs/guides/](../guides/README.md), which supersedes them. The full plan text remains available in git history.
 
-## Still open
+All numbered plans are now implemented, including the movement architecture (`06_movement.md`, implemented as Phase 11: vehicle/mount pawns and extension components, movement-mode routing with replication, camera configs, and input-context switching).
 
-- **[06_movement.md](06_movement.md)** — the one design not yet implemented. Covers vehicle/mount pawns (`AAtlasVehiclePawn`, `AAtlasMountPawn`), their extension components, the full movement-mode routing (enter/exit vehicle, mount/dismount, input context switching), camera config (`UAtlasCameraConfig`, `UAtlasCameraExtensionComponent`), and movement-mode replication. The current `UAtlasMovementExtensionComponent` implements only the mode-tracking core of this design.
-
-## Smaller unimplemented remnants from the removed plans
+## Smaller unimplemented remnants
 
 - **Pre-travel acknowledgements** — `UAtlasLevelTransitionSubsystem` broadcasts `OnPreTravel` synchronously; the observer/ack pattern (wait for async work like an in-flight save before travel, with timeout) was designed but not needed yet.
 - **`Atlas: Add Pawn Data` feature action** — registering an alternative `UAtlasPawnData` per game mode/context from a feature plugin.

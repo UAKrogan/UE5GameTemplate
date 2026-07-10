@@ -38,10 +38,10 @@ Per-module responsibilities, boundaries, and the checklist for adding a new modu
 ## `GameActors` — actor foundation
 
 **Must contain:**
-- `AAtlasCharacter`, `AAtlasPawn`, `AAtlasPlayerController`, `AAtlasAIController`, `AAtlasGameMode`, `AAtlasGameState`, `AAtlasPlayerState`
-- Extension components (`UAtlasPawnExtensionComponent`, `UAtlasAbilityExtensionComponent`, `UAtlasInputExtensionComponent`, `UAtlasMovementExtensionComponent`)
+- `AAtlasCharacter`, `AAtlasPawn` (+ `AAtlasVehiclePawn`, `AAtlasMountPawn`), `AAtlasPlayerController`, `AAtlasAIController`, `AAtlasGameMode`, `AAtlasGameState`, `AAtlasPlayerState`
+- Extension components (`UAtlasPawnExtensionComponent`, `UAtlasAbilityExtensionComponent`, `UAtlasInputExtensionComponent`, `UAtlasMovementExtensionComponent`, `UAtlasVehicleExtensionComponent`, `UAtlasMountExtensionComponent`, `UAtlasCameraExtensionComponent`)
 - `UAtlasAbilitySystemComponent`, `UAtlasBaseAttributeSet`, `UAtlasBaseGameplayAbility`
-- Data asset types for pawn configuration (`UAtlasPawnData`, `UAtlasAbilitySet`, `UAtlasInputConfigData`)
+- Data asset types for pawn configuration (`UAtlasPawnData`, `UAtlasAbilitySet`, `UAtlasInputConfigData`, `UAtlasCameraConfig`)
 - Game Feature actions targeting actors (`Atlas: Add Abilities`, `Atlas: Add Input Config`)
 
 **Must not contain:** UI widgets, save/load logic (participate via `IAtlasSavable` adapters instead), or level transition logic.

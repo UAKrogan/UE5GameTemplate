@@ -7,6 +7,8 @@ The `GameActors` hierarchy and the component contract that keeps base classes th
 ```
 APawn
 └── AAtlasPawn                 (generic pawn, GAS-ready)
+    ├── AAtlasVehiclePawn      (multi-seat vehicle; physics added per game)
+    └── AAtlasMountPawn        (single-rider mount)
 ACharacter
 └── AAtlasCharacter            (humanoid; keeps ACharacter for CharacterMovement + animation)
 AController
@@ -52,7 +54,36 @@ Bindings die with the pawn's input component; mapping contexts are removed in `O
 
 ## UAtlasMovementExtensionComponent
 
-Tracks the high-level movement mode (`Ground`, `Swimming`, `Flying`, `Vehicle`, `Mounted`) so gameplay/animation can react to transitions without knowing the driving movement component. `RequestMovementModeChange()` broadcasts `OnMovementModeChanged`. Vehicle/mount pawn bases and their extension components are future work (see `docs/plan/06_movement.md`).
+The authority on a pawn's high-level movement mode (`EAtlasMovementMode`: `None/Walking/Falling/Swimming/Flying/Custom/InVehicle/Mounted`). It routes transitions and broadcasts `OnMovementModeChanged`; it does not drive physics.
+
+- **Engine sync** — for `ACharacter` owners it mirrors `UCharacterMovementComponent` mode changes (walk/fall/swim/fly/custom) automatically.
+- **Attachment transitions** — `EnterVehicle`/`ExitVehicle` and `MountRider`/`Dismount` save the current mode, disable the pawn's own movement component, attach/detach the pawn to the seat or rider socket, and restore the saved mode on exit. Authority only; called by the vehicle/mount extension components, not directly.
+- **Replication** — the mode replicates with a rep-notify that rebroadcasts on clients; attachment replicates natively with pawn movement.
+- `RequestMovementModeChange()` remains for self-propelled modes and rejects `InVehicle`/`Mounted` (those carry attachment side effects).
+
+The input extension listens to mode changes: while `InVehicle`/`Mounted` the pawn data's default mapping contexts are suppressed (contexts only — ability bindings stay put, so resuming never double-binds).
+
+## Vehicles — AAtlasVehiclePawn + UAtlasVehicleExtensionComponent
+
+`AAtlasVehiclePawn` deliberately ships no vehicle physics; game projects add their movement component (Chaos, custom) and it is resolved via `GetVehicleMovementComponent()`. Seats attach at `Seat_<Index>` sockets (`GetSeatSocketName`/`GetSeatAttachComponent` are overridable, e.g. for skeletal meshes).
+
+`UAtlasVehicleExtensionComponent` owns the lifecycle:
+
+```cpp
+VehicleExt->TryEnterVehicle(Passenger);        // -1 = first free seat
+VehicleExt->ExitVehicle(Passenger);
+VehicleExt->IsSeatOccupied(0);  VehicleExt->GetPassengerCount();
+```
+
+On enter it drives the passenger's movement extension, records the seat, and applies the optional `PassengerInputConfig` (drive controls) and `PassengerCameraConfig` to the passenger; exit reverses everything. The vehicle's `OnPassengerEntered/Exited` virtuals (+ Blueprint events) and the component delegates fire on both.
+
+## Mounts — AAtlasMountPawn + UAtlasMountExtensionComponent
+
+Single-rider variant of the same pattern: `TryMount(Rider)` / `Dismount()`, rider attaches at `GetRiderAttachSocket()` (default `RiderSocket`), `CanBeRidden()` is overridable for taming/ownership rules, and optional `RiderInputConfig`/`RiderCameraConfig` apply while mounted.
+
+## Camera — UAtlasCameraConfig + UAtlasCameraExtensionComponent
+
+`UAtlasCameraConfig` (data asset) holds spring arm and camera settings (arm length, control-rotation flags, FOV, blend hints). The optional `UAtlasCameraExtensionComponent` applies the active config to the pawn's spring arm/camera components: the default comes from `UAtlasPawnData::CameraConfig`; vehicles and mounts `PushCameraConfig()` their own while the pawn is attached and the default is restored on exit. Override `GetActiveCameraConfig()` for extra layers (aim camera, photo mode).
 
 ## Save participation
 

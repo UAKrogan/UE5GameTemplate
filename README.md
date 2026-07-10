@@ -8,6 +8,7 @@ A reusable **Unreal Engine 5.7 C++ framework** for building games. It is not a g
 - **Core runtime** — `UAtlasGameInstanceSubsystem` service locator over pure C++ `IAtlasSystem` systems; `UAtlasAssetManager`; `UAtlasDeveloperSettings`; native gameplay tags
 - **Game flow** — `UAtlasGameFlowSubsystem` state machine, `UAtlasLevelTransitionSubsystem` travel lifecycle with pre/post hooks, travel-surviving loading screen
 - **GAS-ready actors** — PlayerState-owned ASC for players, pawn-owned for AI; extension components coordinate initialization; abilities/effects/attributes granted from `UAtlasAbilitySet` data assets
+- **Vehicles & mounts** — replicated high-level movement modes, seat/rider lifecycle with enter/exit attachment, per-mode input contexts and camera configs (physics left to the game project)
 - **Enhanced Input → abilities** — tag-based activation via `UAtlasInputConfigData`; input never references ability classes
 - **Common UI** — layered root widget (Game/Menu/Modal/Notification/Loading), screens pushed by ID through a registry, input mode owned by the stack, data-driven controller glyphs
 - **Game Features** — all base actors are Modular Gameplay receivers; custom actions add abilities, input configs, screens, and HUD elements from feature plugins
@@ -26,7 +27,7 @@ Requirements: UE 5.7, Visual Studio 2022+ or Rider.
 Start at [docs/guides/README.md](docs/guides/README.md):
 architecture, modules, setup, Common UI, level flow, GAS, actors, Game Features, conventions, testing.
 
-Remaining future-work designs (vehicles/mounts/camera) live in [docs/plan/](docs/plan/README.md); implemented plans were removed and are preserved in git history.
+All planning docs are implemented and removed (preserved in git history); [docs/plan/README.md](docs/plan/README.md) tracks the few small remnants.
 
 ## Layout
 

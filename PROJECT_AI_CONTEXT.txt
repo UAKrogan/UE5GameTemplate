@@ -30,9 +30,14 @@ Implementation status
   5. GAS-ready actors, 6. Enhanced Input -> ability binding,
   7. Game Features / Modular Gameplay, 8. sample feature plugin scaffolding,
   9. save/load hardening, 10. documentation, 11. movement (vehicles/mounts/camera).
-- The plan documents were deleted after implementation (git history has them);
-  docs/plan/README.md tracks the few remaining unimplemented remnants.
-- docs/guides/ is the source of truth for how each system works.
+- The plan documents 00-13 were deleted after implementation (git history has
+  them); docs/plan/README.md tracks remaining remnants.
+- docs/guides/ is the source of truth for how each implemented system works.
+- NEW open plans 14-18 (docs/plan/) design genre support: RTS and RPG with
+  first/third person cameras. Roadmap: 18_genre_roadmap.md, phases 12-18
+  (12 remnants/QA, 13 camera mode stack, 14 interaction + teams,
+  15 selection + orders, 16 RTS player shell, 17 sample RPG/RTS feature
+  plugins, 18 docs/validation). Not yet implemented.
 
 
 ACTIVE REPOSITORY STATE NOTES

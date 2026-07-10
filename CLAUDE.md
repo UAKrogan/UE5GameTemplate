@@ -140,4 +140,4 @@ Assertions:
 ## Docs
 
 - `docs/guides/` — user-facing guides (start at `README.md` there); these describe the implemented behavior and are the source of truth
-- `docs/plan/` — all numbered plans (00–13) are implemented and removed (text in git history); only a README listing small unimplemented remnants remains
+- `docs/plan/` — implemented plans (00–13) are removed (text in git history). Open designs 14–18 cover genre support (RTS / RPG first-third person): camera mode stack, interaction + teams, selection + orders, RTS player shell, sample genre plugins — roadmap in `18_genre_roadmap.md` (phases 12–18, starting with the remnants/QA phase)

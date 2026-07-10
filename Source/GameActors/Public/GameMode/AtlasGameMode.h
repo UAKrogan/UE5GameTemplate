@@ -3,14 +3,18 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "GameFramework/GameModeBase.h"
+#include "GameFramework/GameMode.h"
 #include "AtlasGameMode.generated.h"
 
-/**
- * 
+/*
+ * Base game mode for Atlas projects.
+ *
+ * Extends AGameMode (rather than AGameModeBase) to provide match state
+ * support (WaitingToStart, InProgress, WaitingPostMatch) required by any
+ * non-trivial game loop.
  */
 UCLASS()
-class GAMEACTORS_API AAtlasGameMode : public AGameModeBase
+class GAMEACTORS_API AAtlasGameMode : public AGameMode
 {
 	GENERATED_BODY()
 

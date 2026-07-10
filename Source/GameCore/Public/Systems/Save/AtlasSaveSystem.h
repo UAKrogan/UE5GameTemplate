@@ -59,13 +59,17 @@ private:
 	void HandleSaveCompleted(const FAtlasScheduledSaveRequest& Request, bool bSuccess, int32 ActorCount, int32 ByteCount);
 
 	/*
-	 * Reference to owning subsystem.
+	 * Reference to owning subsystem. Raw pointer is safe because the subsystem
+	 * owns this system and calls Shutdown() (which clears the pointer) before
+	 * it is destroyed. Never cache or use it after Shutdown().
 	 */
 	UAtlasGameInstanceSubsystem* OwningSubsystem = nullptr;
 
 	FAtlasSaveGameSnapshot PendingSnapshot;
 	FAtlasSaveScheduler SaveScheduler;
 
+	// Only accessed on the game thread. Async callbacks must be dispatched via
+	// AsyncTask(ENamedThreads::GameThread, ...) before reading or writing these flags.
 	bool bSaveInProgress = false;
 	bool bShuttingDown = false;
 };

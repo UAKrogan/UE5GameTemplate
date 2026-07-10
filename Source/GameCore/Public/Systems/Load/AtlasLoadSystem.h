@@ -69,13 +69,17 @@ private:
 	static FName BuildComponentChunkName(const UActorComponent* Component, int32 ComponentIndex);
 
 	/*
-	 * Reference to owning subsystem.
+	 * Reference to owning subsystem. Raw pointer is safe because the subsystem
+	 * owns this system and calls Shutdown() (which clears the pointer) before
+	 * it is destroyed. Never cache or use it after Shutdown().
 	 */
 	UAtlasGameInstanceSubsystem* OwningSubsystem = nullptr;
 
 	FAtlasSaveGameSnapshot LoadedSnapshot;
 	FAtlasWorldSnapshot LoadedWorldSnapshot;
 
+	// Only accessed on the game thread. Async callbacks must be dispatched via
+	// AsyncTask(ENamedThreads::GameThread, ...) before reading or writing these flags.
 	bool bLoadInProgress = false;
 	bool bShuttingDown = false;
 };

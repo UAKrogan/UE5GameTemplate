@@ -11,6 +11,7 @@
 #include "Settings/AtlasUIDeveloperSettings.h"
 #include "TimerManager.h"
 #include "UObject/UObjectGlobals.h"
+#include "Widgets/AtlasHUDWidget.h"
 #include "Widgets/AtlasLoadingScreenWidget.h"
 #include "Widgets/AtlasModalWidget.h"
 #include "Widgets/AtlasNotificationWidget.h"
@@ -198,6 +199,31 @@ bool UAtlasUISubsystem::IsScreenActive(FName ScreenId) const
 	return false;
 }
 
+void UAtlasUISubsystem::RegisterScreen(FName ScreenId, UAtlasScreenDefinition* Definition)
+{
+	if (UAtlasScreenRegistry* Registry = ResolveScreenRegistry())
+	{
+		Registry->RegisterScreen(ScreenId, Definition);
+	}
+	else
+	{
+		ATLAS_LOG_UI(Warning, "RegisterScreen(%s) failed: no screen registry configured", *ScreenId.ToString());
+	}
+}
+
+void UAtlasUISubsystem::UnregisterScreen(FName ScreenId)
+{
+	if (IsScreenActive(ScreenId))
+	{
+		PopScreen(ScreenId);
+	}
+
+	if (UAtlasScreenRegistry* Registry = ResolveScreenRegistry())
+	{
+		Registry->UnregisterScreen(ScreenId);
+	}
+}
+
 void UAtlasUISubsystem::ShowHUD()
 {
 	PushScreen(UAtlasUIDeveloperSettings::Get()->HUDScreenId);
@@ -206,6 +232,20 @@ void UAtlasUISubsystem::ShowHUD()
 void UAtlasUISubsystem::HideHUD()
 {
 	PopScreen(UAtlasUIDeveloperSettings::Get()->HUDScreenId);
+}
+
+UAtlasHUDWidget* UAtlasUISubsystem::GetActiveHUDWidget() const
+{
+	const FName HUDScreenId = UAtlasUIDeveloperSettings::Get()->HUDScreenId;
+	for (const FAtlasActiveScreen& Screen : ActiveScreens)
+	{
+		if (Screen.ScreenId == HUDScreenId)
+		{
+			return Cast<UAtlasHUDWidget>(Screen.Widget.Get());
+		}
+	}
+
+	return nullptr;
 }
 
 void UAtlasUISubsystem::ShowModal(FName ModalId, FAtlasModalPayload Payload, const FAtlasModalResultDelegate& OnResult)
@@ -387,7 +427,7 @@ bool UAtlasUISubsystem::EnsureRootWidget()
 	return true;
 }
 
-const UAtlasScreenRegistry* UAtlasUISubsystem::ResolveScreenRegistry()
+UAtlasScreenRegistry* UAtlasUISubsystem::ResolveScreenRegistry()
 {
 	if (ScreenRegistry == nullptr)
 	{

@@ -24,7 +24,11 @@ class GAMEACTORS_API AAtlasCharacter : public ACharacter, public IAbilitySystemI
 public:
 	AAtlasCharacter();
 
+	//~AActor interface (Modular Gameplay receiver)
+	virtual void PreInitializeComponents() override;
 	virtual void BeginPlay() override;
+	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
+	//~End of AActor interface
 
 	//~IAbilitySystemInterface interface
 	virtual UAbilitySystemComponent* GetAbilitySystemComponent() const override;

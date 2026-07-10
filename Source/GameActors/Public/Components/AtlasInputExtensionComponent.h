@@ -39,6 +39,19 @@ public:
 	 */
 	void Cleanup();
 
+	/*
+	 * Applies a single config at runtime (mapping context + ability bindings
+	 * on the current pawn's input component). Used by Game Feature actions.
+	 */
+	void ApplyConfig(const UAtlasInputConfigData* Config);
+
+	/*
+	 * Removes a runtime-applied config's mapping context. Ability bindings
+	 * live on the pawn's input component and are torn down with it on the
+	 * next possession change.
+	 */
+	void RemoveConfig(const UAtlasInputConfigData* Config);
+
 private:
 	void HandleAbilityInputPressed(FGameplayTag InputTag);
 	void HandleAbilityInputReleased(FGameplayTag InputTag);

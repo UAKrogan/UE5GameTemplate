@@ -5,6 +5,7 @@
 #include "Components/AtlasAbilityExtensionComponent.h"
 #include "Components/AtlasInputExtensionComponent.h"
 #include "Components/AtlasPawnExtensionComponent.h"
+#include "Components/GameFrameworkComponentManager.h"
 #include "Controller/AtlasPlayerController.h"
 #include "GAS/AtlasAbilitySystemComponent.h"
 
@@ -16,11 +17,28 @@ AAtlasPawn::AAtlasPawn()
 	AbilityExtComp = CreateDefaultSubobject<UAtlasAbilityExtensionComponent>(TEXT("AbilityExtComp"));
 }
 
+void AAtlasPawn::PreInitializeComponents()
+{
+	Super::PreInitializeComponents();
+
+	UGameFrameworkComponentManager::AddGameFrameworkComponentReceiver(this);
+}
+
 void AAtlasPawn::BeginPlay()
 {
+	UGameFrameworkComponentManager::SendGameFrameworkComponentExtensionEvent(
+		this, UGameFrameworkComponentManager::NAME_GameActorReady);
+
 	Super::BeginPlay();
 
 	InitializePawn();
+}
+
+void AAtlasPawn::EndPlay(const EEndPlayReason::Type EndPlayReason)
+{
+	UGameFrameworkComponentManager::RemoveGameFrameworkComponentReceiver(this);
+
+	Super::EndPlay(EndPlayReason);
 }
 
 UAbilitySystemComponent* AAtlasPawn::GetAbilitySystemComponent() const

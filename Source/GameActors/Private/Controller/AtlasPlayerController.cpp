@@ -3,6 +3,7 @@
 #include "Controller/AtlasPlayerController.h"
 
 #include "Components/AtlasInputExtensionComponent.h"
+#include "Components/GameFrameworkComponentManager.h"
 #include "Logging/AtlasLogMacros.h"
 
 AAtlasPlayerController::AAtlasPlayerController()
@@ -10,11 +11,28 @@ AAtlasPlayerController::AAtlasPlayerController()
 	InputExtComp = CreateDefaultSubobject<UAtlasInputExtensionComponent>(TEXT("InputExtComp"));
 }
 
+void AAtlasPlayerController::PreInitializeComponents()
+{
+	Super::PreInitializeComponents();
+
+	UGameFrameworkComponentManager::AddGameFrameworkComponentReceiver(this);
+}
+
 void AAtlasPlayerController::BeginPlay()
 {
+	UGameFrameworkComponentManager::SendGameFrameworkComponentExtensionEvent(
+		this, UGameFrameworkComponentManager::NAME_GameActorReady);
+
 	Super::BeginPlay();
 
 	InitializeController();
+}
+
+void AAtlasPlayerController::EndPlay(const EEndPlayReason::Type EndPlayReason)
+{
+	UGameFrameworkComponentManager::RemoveGameFrameworkComponentReceiver(this);
+
+	Super::EndPlay(EndPlayReason);
 }
 
 void AAtlasPlayerController::SetupInputComponent()

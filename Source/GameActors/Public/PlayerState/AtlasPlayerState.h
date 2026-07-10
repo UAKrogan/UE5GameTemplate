@@ -29,7 +29,11 @@ public:
 	UAtlasAbilitySystemComponent* GetAtlasAbilitySystemComponent() const { return AbilitySystemComponent; }
 
 protected:
+	//~AActor interface (Modular Gameplay receiver)
+	virtual void PreInitializeComponents() override;
 	virtual void BeginPlay() override;
+	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
+	//~End of AActor interface
 
 	virtual void InitializePlayerState();
 

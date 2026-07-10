@@ -15,7 +15,7 @@ public class GameUI : ModuleRules
 
 		PublicDependencyModuleNames.AddRange([
 			"Core", "CoreUObject", "Engine", "UMG", "CommonUI", "CommonInput",
-			"InputCore", "DeveloperSettings",
+			"InputCore", "DeveloperSettings", "GameFeatures",
 			"GameUtils"
 		]);
 

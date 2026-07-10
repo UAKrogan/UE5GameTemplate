@@ -5,9 +5,11 @@
 #include "AtlasUISubsystem.generated.h"
 
 class UAtlasActivatableWidget;
+class UAtlasHUDWidget;
 class UAtlasLoadingScreenWidget;
 class UAtlasModalWidget;
 class UAtlasRootWidget;
+class UAtlasScreenDefinition;
 class UAtlasScreenRegistry;
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FAtlasScreenEvent, FName, ScreenId);
@@ -48,6 +50,19 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Atlas UI")
 	bool IsScreenActive(FName ScreenId) const;
 
+	/*
+	 * Runtime screen registration, used by Game Feature actions to
+	 * contribute screens without touching the authored registry asset.
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Atlas UI")
+	void RegisterScreen(FName ScreenId, UAtlasScreenDefinition* Definition);
+
+	/*
+	 * Unregisters a runtime screen; pops it first if currently active.
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Atlas UI")
+	void UnregisterScreen(FName ScreenId);
+
 	// ── HUD ──────────────────────────────────────────────────────────
 
 	UFUNCTION(BlueprintCallable, Category = "Atlas UI|HUD")
@@ -55,6 +70,9 @@ public:
 
 	UFUNCTION(BlueprintCallable, Category = "Atlas UI|HUD")
 	void HideHUD();
+
+	UFUNCTION(BlueprintCallable, Category = "Atlas UI|HUD")
+	UAtlasHUDWidget* GetActiveHUDWidget() const;
 
 	// ── Modals ───────────────────────────────────────────────────────
 
@@ -116,7 +134,7 @@ private:
 	};
 
 	bool EnsureRootWidget();
-	const UAtlasScreenRegistry* ResolveScreenRegistry();
+	UAtlasScreenRegistry* ResolveScreenRegistry();
 	void HandlePostLoadMap(UWorld* LoadedWorld);
 	void HandleScreenDeactivated(TWeakObjectPtr<UAtlasActivatableWidget> Widget);
 	void UpdateInputModeFromScreens();
@@ -126,7 +144,7 @@ private:
 	TObjectPtr<UAtlasRootWidget> RootWidget;
 
 	UPROPERTY(Transient)
-	TObjectPtr<const UAtlasScreenRegistry> ScreenRegistry;
+	TObjectPtr<UAtlasScreenRegistry> ScreenRegistry;
 
 	UPROPERTY(Transient)
 	TObjectPtr<UAtlasLoadingScreenWidget> LoadingScreenWidget;

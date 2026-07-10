@@ -34,55 +34,90 @@ void UAtlasInputExtensionComponent::InitializeForPawn(APawn* InPawn, UInputCompo
 	Cleanup();
 	BoundPawn = InPawn;
 
-	UEnhancedInputLocalPlayerSubsystem* InputSubsystem = nullptr;
-	if (const ULocalPlayer* LocalPlayer = PlayerController->GetLocalPlayer())
-	{
-		InputSubsystem = LocalPlayer->GetSubsystem<UEnhancedInputLocalPlayerSubsystem>();
-	}
-
-	UEnhancedInputComponent* EnhancedInput = Cast<UEnhancedInputComponent>(PawnInputComponent);
-
 	for (const TSoftObjectPtr<UAtlasInputConfigData>& ConfigPtr : PawnData->InputConfigs)
 	{
-		const UAtlasInputConfigData* Config = ConfigPtr.LoadSynchronous();
-		if (Config == nullptr)
-		{
-			continue;
-		}
+		ApplyConfig(ConfigPtr.LoadSynchronous());
+	}
 
-		AppliedConfigs.Add(Config);
+	ATLAS_LOG_ACTORS(Log, "Input initialized for %s (%d configs)", *InPawn->GetName(), AppliedConfigs.Num());
+}
 
-		if (InputSubsystem != nullptr)
+void UAtlasInputExtensionComponent::ApplyConfig(const UAtlasInputConfigData* Config)
+{
+	if (Config == nullptr || AppliedConfigs.Contains(Config))
+	{
+		return;
+	}
+
+	const APlayerController* PlayerController = Cast<APlayerController>(GetOwner());
+	if (PlayerController == nullptr)
+	{
+		return;
+	}
+
+	APawn* Pawn = BoundPawn.Get();
+	if (Pawn == nullptr)
+	{
+		Pawn = PlayerController->GetPawn();
+		BoundPawn = Pawn;
+	}
+
+	AppliedConfigs.Add(Config);
+
+	if (const ULocalPlayer* LocalPlayer = PlayerController->GetLocalPlayer())
+	{
+		if (UEnhancedInputLocalPlayerSubsystem* InputSubsystem = LocalPlayer->GetSubsystem<UEnhancedInputLocalPlayerSubsystem>())
 		{
 			if (UInputMappingContext* MappingContext = Config->MappingContext.LoadSynchronous())
 			{
 				InputSubsystem->AddMappingContext(MappingContext, Config->Priority);
 			}
 		}
+	}
 
-		if (EnhancedInput == nullptr)
+	// Bindings attach to the pawn's input component, so they are torn down
+	// automatically when the pawn is unpossessed or destroyed.
+	UEnhancedInputComponent* EnhancedInput = Pawn != nullptr ? Cast<UEnhancedInputComponent>(Pawn->InputComponent) : nullptr;
+	if (EnhancedInput == nullptr)
+	{
+		return;
+	}
+
+	for (const FAtlasAbilityInputBinding& Binding : Config->AbilityBindings)
+	{
+		const UInputAction* InputAction = Binding.InputAction.LoadSynchronous();
+		if (InputAction == nullptr || !Binding.InputTag.IsValid())
 		{
 			continue;
 		}
 
-		// Bindings attach to the pawn's input component, so they are torn
-		// down automatically when the pawn is unpossessed or destroyed.
-		for (const FAtlasAbilityInputBinding& Binding : Config->AbilityBindings)
-		{
-			const UInputAction* InputAction = Binding.InputAction.LoadSynchronous();
-			if (InputAction == nullptr || !Binding.InputTag.IsValid())
-			{
-				continue;
-			}
+		EnhancedInput->BindAction(InputAction, ETriggerEvent::Started, this,
+			&UAtlasInputExtensionComponent::HandleAbilityInputPressed, Binding.InputTag);
+		EnhancedInput->BindAction(InputAction, ETriggerEvent::Completed, this,
+			&UAtlasInputExtensionComponent::HandleAbilityInputReleased, Binding.InputTag);
+	}
+}
 
-			EnhancedInput->BindAction(InputAction, ETriggerEvent::Started, this,
-				&UAtlasInputExtensionComponent::HandleAbilityInputPressed, Binding.InputTag);
-			EnhancedInput->BindAction(InputAction, ETriggerEvent::Completed, this,
-				&UAtlasInputExtensionComponent::HandleAbilityInputReleased, Binding.InputTag);
-		}
+void UAtlasInputExtensionComponent::RemoveConfig(const UAtlasInputConfigData* Config)
+{
+	if (Config == nullptr || AppliedConfigs.Remove(const_cast<UAtlasInputConfigData*>(Config)) == 0)
+	{
+		return;
 	}
 
-	ATLAS_LOG_ACTORS(Log, "Input initialized for %s (%d configs)", *InPawn->GetName(), AppliedConfigs.Num());
+	if (const APlayerController* PlayerController = Cast<APlayerController>(GetOwner()))
+	{
+		if (const ULocalPlayer* LocalPlayer = PlayerController->GetLocalPlayer())
+		{
+			if (UEnhancedInputLocalPlayerSubsystem* InputSubsystem = LocalPlayer->GetSubsystem<UEnhancedInputLocalPlayerSubsystem>())
+			{
+				if (UInputMappingContext* MappingContext = Config->MappingContext.Get())
+				{
+					InputSubsystem->RemoveMappingContext(MappingContext);
+				}
+			}
+		}
+	}
 }
 
 void UAtlasInputExtensionComponent::Cleanup()

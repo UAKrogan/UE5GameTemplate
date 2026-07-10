@@ -2,10 +2,25 @@
 
 #include "GameMode/AtlasGameMode.h"
 
+#include "Components/GameFrameworkComponentManager.h"
 #include "Data/AtlasPawnData.h"
 
 AAtlasGameMode::AAtlasGameMode()
 {
+}
+
+void AAtlasGameMode::PreInitializeComponents()
+{
+	Super::PreInitializeComponents();
+
+	UGameFrameworkComponentManager::AddGameFrameworkComponentReceiver(this);
+}
+
+void AAtlasGameMode::EndPlay(const EEndPlayReason::Type EndPlayReason)
+{
+	UGameFrameworkComponentManager::RemoveGameFrameworkComponentReceiver(this);
+
+	Super::EndPlay(EndPlayReason);
 }
 
 void AAtlasGameMode::StartPlay()

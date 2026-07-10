@@ -2,6 +2,7 @@
 
 #include "PlayerState/AtlasPlayerState.h"
 
+#include "Components/GameFrameworkComponentManager.h"
 #include "GAS/AtlasAbilitySystemComponent.h"
 
 AAtlasPlayerState::AAtlasPlayerState()
@@ -18,11 +19,28 @@ UAbilitySystemComponent* AAtlasPlayerState::GetAbilitySystemComponent() const
 	return AbilitySystemComponent;
 }
 
+void AAtlasPlayerState::PreInitializeComponents()
+{
+	Super::PreInitializeComponents();
+
+	UGameFrameworkComponentManager::AddGameFrameworkComponentReceiver(this);
+}
+
 void AAtlasPlayerState::BeginPlay()
 {
+	UGameFrameworkComponentManager::SendGameFrameworkComponentExtensionEvent(
+		this, UGameFrameworkComponentManager::NAME_GameActorReady);
+
 	Super::BeginPlay();
 
 	InitializePlayerState();
+}
+
+void AAtlasPlayerState::EndPlay(const EEndPlayReason::Type EndPlayReason)
+{
+	UGameFrameworkComponentManager::RemoveGameFrameworkComponentReceiver(this);
+
+	Super::EndPlay(EndPlayReason);
 }
 
 void AAtlasPlayerState::InitializePlayerState()

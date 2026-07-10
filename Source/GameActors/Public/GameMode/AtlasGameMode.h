@@ -23,6 +23,11 @@ class GAMEACTORS_API AAtlasGameMode : public AGameMode
 public:
 	AAtlasGameMode();
 
+	//~AActor interface (Modular Gameplay receiver)
+	virtual void PreInitializeComponents() override;
+	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
+	//~End of AActor interface
+
 	virtual void StartPlay() override;
 
 	//~AGameModeBase interface

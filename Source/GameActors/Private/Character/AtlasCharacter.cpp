@@ -6,6 +6,7 @@
 #include "Components/AtlasInputExtensionComponent.h"
 #include "Components/AtlasMovementExtensionComponent.h"
 #include "Components/AtlasPawnExtensionComponent.h"
+#include "Components/GameFrameworkComponentManager.h"
 #include "Controller/AtlasPlayerController.h"
 #include "GAS/AtlasAbilitySystemComponent.h"
 
@@ -18,11 +19,28 @@ AAtlasCharacter::AAtlasCharacter()
 	MovementExtComp = CreateDefaultSubobject<UAtlasMovementExtensionComponent>(TEXT("MovementExtComp"));
 }
 
+void AAtlasCharacter::PreInitializeComponents()
+{
+	Super::PreInitializeComponents();
+
+	UGameFrameworkComponentManager::AddGameFrameworkComponentReceiver(this);
+}
+
 void AAtlasCharacter::BeginPlay()
 {
+	UGameFrameworkComponentManager::SendGameFrameworkComponentExtensionEvent(
+		this, UGameFrameworkComponentManager::NAME_GameActorReady);
+
 	Super::BeginPlay();
 
 	InitializeCharacter();
+}
+
+void AAtlasCharacter::EndPlay(const EEndPlayReason::Type EndPlayReason)
+{
+	UGameFrameworkComponentManager::RemoveGameFrameworkComponentReceiver(this);
+
+	Super::EndPlay(EndPlayReason);
 }
 
 UAbilitySystemComponent* AAtlasCharacter::GetAbilitySystemComponent() const

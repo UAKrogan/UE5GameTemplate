@@ -6,10 +6,11 @@
 #include "GameFramework/PlayerController.h"
 #include "AtlasPlayerController.generated.h"
 
+class UAtlasInputExtensionComponent;
+
 /*
- * Base player controller. Possession hooks are overridable for game
- * projects; Enhanced Input wiring is added via the input extension
- * component (Phase 6).
+ * Base player controller. Owns the input extension component, which applies
+ * pawn data mapping contexts and binds ability input on pawn restart.
  */
 UCLASS()
 class GAMEACTORS_API AAtlasPlayerController : public APlayerController
@@ -18,6 +19,8 @@ class GAMEACTORS_API AAtlasPlayerController : public APlayerController
 
 public:
 	AAtlasPlayerController();
+
+	UAtlasInputExtensionComponent* GetInputExtensionComponent() const { return InputExtComp; }
 
 protected:
 	virtual void BeginPlay() override;
@@ -32,4 +35,7 @@ protected:
 	virtual void InitializeController();
 
 	virtual void InitializeInput();
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Atlas")
+	TObjectPtr<UAtlasInputExtensionComponent> InputExtComp;
 };

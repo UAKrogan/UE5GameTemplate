@@ -2,10 +2,12 @@
 
 #include "Controller/AtlasPlayerController.h"
 
+#include "Components/AtlasInputExtensionComponent.h"
 #include "Logging/AtlasLogMacros.h"
 
 AAtlasPlayerController::AAtlasPlayerController()
 {
+	InputExtComp = CreateDefaultSubobject<UAtlasInputExtensionComponent>(TEXT("InputExtComp"));
 }
 
 void AAtlasPlayerController::BeginPlay()
@@ -32,6 +34,8 @@ void AAtlasPlayerController::OnPossess(APawn* InPawn)
 void AAtlasPlayerController::OnUnPossess()
 {
 	ATLAS_LOG_ACTORS(Log, "Player controller unpossessed %s", *GetNameSafe(GetPawn()));
+
+	InputExtComp->Cleanup();
 
 	Super::OnUnPossess();
 }

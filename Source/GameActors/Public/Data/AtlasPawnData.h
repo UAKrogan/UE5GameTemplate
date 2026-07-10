@@ -5,10 +5,11 @@
 
 class APawn;
 class UAtlasAbilitySet;
+class UAtlasInputConfigData;
 
 /*
  * Per-pawn-type configuration: everything needed to set up a pawn instance
- * without hardcoding in actor classes. Input configs are added in Phase 6.
+ * without hardcoding in actor classes.
  *
  * Primary asset type: AtlasPawnData.
  */
@@ -30,4 +31,8 @@ public:
 	// Granted on possession by the pawn extension component.
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Abilities")
 	TArray<TSoftObjectPtr<UAtlasAbilitySet>> AbilitySets;
+
+	// Applied on possession by the input extension component.
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Input")
+	TArray<TSoftObjectPtr<UAtlasInputConfigData>> InputConfigs;
 };
